@@ -1,0 +1,43 @@
+# Tiny overlay for a quick end-to-end check on a laptop (CPU/MPS), used by run_smoke_test.sh.
+# Stack it after any architecture config:  --config configs/a1_gpt.yaml configs/smoke.yaml
+paths:
+  data_dir: data_toy
+  runs_dir: runs_toy
+data:
+  local_dir: data_toy/hf
+  train_tokens: 400_000
+  val_tokens: 60_000
+  val_fraction: 0.1
+  doc_keep_prob: 1.0
+  n_dev_prompts: 12
+tokenizer:
+  vocab_size: 2000
+  train_docs: 2000
+  path: data_toy/tokenizer/legal_bpe.json
+model:
+  d_model: 128
+  n_layers: 2
+  n_enc_layers: 2
+  n_dec_layers: 2
+  n_heads: 4
+  n_kv_heads: 2
+  d_ff: 256
+  window: 64
+  global_every: 2
+train:
+  block_size: 256
+  micro_batch_size: 4
+  grad_accum_steps: 2
+  max_steps: 40
+  warmup_steps: 5
+  lr: 1.0e-3
+  log_interval: 10
+  eval_interval: 20
+  eval_batches: 4
+  enforce_param_budget: false
+monitor:                  # toy runs last seconds, so log every 2 s instead of every minute
+  interval_seconds: 2
+  poll_seconds: 0.5
+generation:
+  max_new_tokens: 64
+  batch_size: 4

@@ -1,0 +1,16 @@
+# Optional compression experiment: a smaller A4 student learns from a trained teacher.
+# Train the teacher first (e.g. A1), then:  python scripts/04_train.py --config configs/distill_efficient_small.yaml
+inherit: a4_efficient.yaml
+run_name: KD_efficient_small
+model:
+  d_model: 576
+  n_layers: 8
+  n_heads: 9
+  n_kv_heads: 3
+  d_ff: 1536
+distill:
+  teacher_ckpt: runs/A1_gpt/best.pt
+  alpha: 0.5             # weight of the normal next-token loss (1 - alpha on the KL term)
+  temperature: 2.0
+train:
+  enforce_param_budget: false  # a compressed student may fall below 50M; the teacher stays the foundation model

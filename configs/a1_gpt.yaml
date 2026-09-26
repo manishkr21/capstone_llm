@@ -1,0 +1,10 @@
+# A1 - Decoder-only GPT baseline (learned positions, LayerNorm, GELU, full attention)
+inherit: base.yaml
+run_name: A1_gpt
+model:
+  arch: gpt
+  d_model: 768
+  n_layers: 8
+  n_heads: 12
+  d_ff: 3072
+  dropout: 0.0

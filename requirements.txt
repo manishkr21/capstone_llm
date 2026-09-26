@@ -1,0 +1,13 @@
+torch>=2.1
+numpy
+tokenizers>=0.15
+huggingface_hub>=0.20
+ijson>=3.2
+pyyaml
+tqdm
+matplotlib
+psutil            # CPU/RAM usage log (legal_lm/monitor.py)
+nvidia-ml-py      # GPU utilisation/VRAM log; falls back to nvidia-smi if missing
+rouge-score
+sacrebleu
+bert-score

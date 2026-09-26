@@ -1,0 +1,80 @@
+# Shared settings. Every architecture config inherits this file, so all four models
+# see the SAME data, tokenizer, token budget and schedule: a controlled comparison.
+run_name: base
+seed: 1337
+
+paths:
+  data_dir: data          # corpus, tokenizer, token bins, dev/test prompts
+  runs_dir: runs          # one sub-folder per experiment (on Colab: a Drive folder)
+
+data:
+  local_dir: null         # folder that contains Phase_1_Pretraining/ if downloaded; null = stream from HF
+  json_path: null         # ijson prefix for unusual JSON layouts (auto-detected otherwise)
+  text_field: null        # record key holding the text (auto-detected otherwise)
+  sources:                # mixing ratios; set one to 0 to drop a source (ablation)
+    acts: 0.10
+    supreme_court: 0.30
+    high_courts: 0.35
+    tribunals: 0.25
+  train_tokens: 200_000_000      # total training budget (starter notebook uses ~200M)
+  val_tokens: 5_000_000          # held-out documents for validation loss
+  tokens_per_word_estimate: 1.35 # budgets are converted to words while streaming
+  val_fraction: 0.01             # chance that a document goes to the validation split
+  doc_keep_prob: 0.5             # randomly skip documents to spread reads over each file
+  min_words: 50                  # drop tiny fragments
+  collapse_whitespace: true
+  n_dev_prompts: 200             # local stand-in for the hidden test set
+  prompt_words: 512
+  continuation_words: 128
+
+tokenizer:
+  type: bpe               # bpe (trained on the legal corpus) | gpt2 (starter default)
+  vocab_size: 32000
+  min_frequency: 2
+  train_docs: 100000      # documents used to learn the BPE merges
+  path: data/tokenizer/legal_bpe.json
+
+model: {}                 # filled in by the architecture configs
+
+train:
+  block_size: 1024        # context window in tokens (512 words ~ 700 legal BPE tokens)
+  micro_batch_size: 8
+  grad_accum_steps: 8     # 8 x 8 x 1024 = 65,536 tokens per optimizer step
+  max_steps: 3000         # 3000 x 65,536 ~ 197M tokens ~ one pass over the budget
+  lr: 6.0e-4
+  min_lr: 6.0e-5
+  warmup_steps: 200
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  grad_clip: 1.0
+  log_interval: 20
+  eval_interval: 250
+  eval_batches: 40
+  early_stop_patience: null
+  dtype: auto             # auto | bfloat16 | float16 | float32
+  device: auto
+  compile: false          # torch.compile; helps gpt/efficient on recent GPUs
+  resume: true            # continue from runs/<run_name>/last.pt if present
+  enforce_param_budget: true   # the rules require 50M-300M parameters
+
+eval:
+  prefix_frac: 0.75       # validation: 768 tokens of context, loss on the next 257
+
+distill: null             # see configs/distill_efficient_small.yaml
+
+monitor:                  # per-minute RAM/VRAM/CPU/GPU log -> runs/<run>/resources.csv
+  enabled: true
+  interval_seconds: 60    # one CSV row per minute (mean/max of the polls inside it)
+  poll_seconds: 5         # how often the machine is sampled within that minute
+
+generation:
+  temperature: 0.8
+  top_k: 50
+  top_p: 0.95
+  repetition_penalty: 1.1
+  repetition_window: 256
+  ban_eos: true
+  target_words: 128
+  max_new_tokens: 256     # enough tokens for 128 words (~1.35 tokens/word)
+  batch_size: 16
+  seed: 0

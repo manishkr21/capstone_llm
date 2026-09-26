@@ -1,0 +1,11 @@
+# A2 - Encoder-decoder (bidirectional prompt encoder, cross-attending decoder, sinusoidal)
+inherit: base.yaml
+run_name: A2_encdec
+model:
+  arch: encdec
+  d_model: 640
+  n_enc_layers: 6
+  n_dec_layers: 6
+  n_heads: 10
+  d_ff: 2560
+  dropout: 0.0

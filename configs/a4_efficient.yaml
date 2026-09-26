@@ -1,0 +1,14 @@
+# A4 - Efficient decoder (RoPE, RMSNorm, SwiGLU, grouped-query + sliding-window attention)
+inherit: base.yaml
+run_name: A4_efficient
+model:
+  arch: efficient
+  d_model: 768
+  n_layers: 10
+  n_heads: 12
+  n_kv_heads: 4          # 3 query heads share each key/value head
+  d_ff: 2048             # SwiGLU has 3 matrices, so 2048 ~ the cost of a 3072 GELU MLP
+  window: 256            # local layers see the last 256 tokens
+  global_every: 3        # layers 3, 6, 9 attend to the full context
+  rope_theta: 10000.0
+  dropout: 0.0
