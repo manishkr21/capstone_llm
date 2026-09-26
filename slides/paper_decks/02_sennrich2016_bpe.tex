@@ -1,0 +1,495 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[Subword Units (BPE)]{Neural Machine Translation of Rare Words with Subword Units}
+\subtitle{Sennrich, Haddow and Birch (ACL 2016), arXiv:1508.07909}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{R.\ Sennrich, B.\ Haddow, A.\ Birch. \emph{Neural Machine Translation of Rare Words with Subword Units}. ACL 2016. University of Edinburgh.}
+{Adapt the byte-pair-encoding compression algorithm to split words into frequent subword units, so a fixed-size vocabulary can represent \emph{any} word.}
+{BPE is how our Phase-1 tokenizer is built (\code{scripts/02\_train\_tokenizer.py}). Every model in all seven phases reads BPE tokens.}
+{Main deck: ``Step 02: a legal byte-level BPE tokenizer''. Glossary: ``Tokenization'' section.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Translation is an open-vocabulary problem}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item Neural models use a \textbf{fixed vocabulary}, typically 30,000--50,000 words.
+        \item Real text keeps producing \textbf{new words}: names, compounds, inflections, loanwords.
+        \item Words outside the vocabulary become \code{UNK}.
+        \item Earlier fix: a \textbf{back-off dictionary}. Translate \code{UNK} by looking the source word up, or copy it.
+      \end{itemize}
+      \vspace{1mm}
+      Problems with back-off:
+      \begin{itemize}
+        \item Words do not map one-to-one across languages.
+        \item The model cannot \emph{generate} unseen words.
+        \item Copying fails when alphabets differ, e.g.\ English to Russian.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{The paper's example}
+        \small
+        German \emph{Abwasser$|$behandlungs$|$anlage} means ``sewage water treatment plant''.
+        One long compound, three meaningful parts. A single fixed-length vector for the whole word is a poor fit; its parts are what translate.
+      \end{exampleblock}
+      \begin{exampleblock}{A legal example}
+        \small
+        \emph{Vakalatnama}, \emph{Panchnama}, \emph{Mukhtarnama} share the suffix \emph{-nama} (``document''). A word-level vocabulary may miss the rarer ones entirely.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Key intuition: rare words are made of translatable pieces}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Many word types can be translated by a competent translator even if new, from known smaller units:
+      \begin{itemize}
+        \item \textbf{Names}: copy or transliterate. \emph{Barack Obama} becomes Russian \emph{Barak Obama} (in Cyrillic).
+        \item \textbf{Cognates and loanwords}: regular character changes. \emph{claustrophobia}, \emph{Klaustrophobie}.
+        \item \textbf{Morphologically complex words}: translate the parts. \emph{solar system}, \emph{Sonnen$|$system}.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{Evidence from the paper}
+        \small
+        100 rare German tokens (outside the top 50,000) were analysed:
+        \vspace{1mm}
+
+        \begin{tabular}{@{}lr@{}}
+          \toprule
+          Category & Count\\
+          \midrule
+          Compounds & 56\\
+          Names & 21\\
+          Loanwords, common origin & 6\\
+          Transparent affixation & 5\\
+          Number / code identifier & 2\\
+          \bottomrule
+        \end{tabular}
+        \vspace{1mm}
+
+        Most rare words are translatable from their parts.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The trade-off: vocabulary size vs sequence length}
+  \begin{columns}[T]
+    \begin{column}{0.46\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Words}: short sequences, but a huge vocabulary and unknown words.
+        \item \textbf{Characters}: tiny vocabulary and no unknowns, but very long sequences. Attention must span far more positions.
+        \item \textbf{Goal}: a compact vocabulary \emph{and} short text, with no unknown words.
+      \end{itemize}
+      \vspace{1mm}
+      Earlier segmenters from statistical MT, such as compound splitting and Morfessor, only moderately shrink the vocabulary and still leave unknown words.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \footnotesize
+      German training data (about 100M tokens):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lrrr@{}}
+        \toprule
+        Segmentation & Tokens & Types & UNK\\
+        \midrule
+        none (words) & 100 m & 1,750,000 & 1079\\
+        characters & 550 m & 3,000 & 0\\
+        char.\ bigrams & 306 m & 20,000 & 34\\
+        compound splitting & 102 m & 1,100,000 & 643\\
+        Morfessor & 109 m & 544,000 & 237\\
+        \textbf{BPE} & \textbf{112 m} & \textbf{63,000} & \textbf{0}\\
+        BPE (joint) & 111 m & 82,000 & 32\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize UNK = unknown tokens in newstest2013.}
+      \vspace{1mm}
+
+      BPE makes text only 12\% longer than words, with a vocabulary 28$\times$ smaller and \textbf{no unknowns}.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: byte-pair encoding}
+
+\begin{frame}{From compression to segmentation}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \textbf{Original BPE} (Gage, 1994) is a data-compression method: repeatedly replace the most frequent pair of bytes with a new, unused byte.
+      \vspace{1mm}
+
+      \textbf{Adaptation for words}:
+      \begin{enumerate}
+        \item Write every word as characters plus an end-of-word marker \code{</w>}.
+        \item Count all adjacent symbol pairs, weighted by word frequency.
+        \item Merge the most frequent pair (A, B) into a new symbol AB everywhere.
+        \item Repeat for a chosen number of merges.
+      \end{enumerate}
+      Vocabulary = characters + merges; the \textbf{number of merges is the only hyperparameter}.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{Design details}
+        \small
+        \begin{itemize}
+          \item Pairs never cross word boundaries, so BPE can run on a word-frequency dictionary, which is fast.
+          \item The \code{</w>} marker lets the original text be restored exactly.
+          \item Frequent words end up as one symbol; rare words as several pieces.
+          \item Unlike Huffman codes, the pieces are \emph{readable} subwords, so the network can reuse them.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Easy example: the paper's toy vocabulary}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \small
+      Word counts:
+      \code{low}$\times$5, \code{lower}$\times$2, \code{newest}$\times$6, \code{widest}$\times$3.
+      \vspace{1mm}
+
+      \begin{tabular}{@{}clr@{}}
+        \toprule
+        Step & Merge & Count\\
+        \midrule
+        1 & e + s $\to$ es & 9\\
+        2 & es + t $\to$ est & 9\\
+        3 & est + \code{</w>} $\to$ est\code{</w>} & 9\\
+        4 & l + o $\to$ lo & 7\\
+        5 & lo + w $\to$ low & 7\\
+        6 & n + e $\to$ ne & 6\\
+        7 & ne + w $\to$ new & 6\\
+        8 & new + est\code{</w>} $\to$ newest\code{</w>} & 6\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize Counts: ``e s'' appears in newest (6) and widest (3), so 9.}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Applying the merges to text}
+        \small
+        After 10 merges the vocabulary gives:
+        \begin{itemize}
+          \item \code{newest} $\to$ \code{newest</w>}: one symbol.
+          \item \code{widest} $\to$ \code{wi d est</w>}.
+          \item \code{lower} $\to$ \code{low e r </w>}.
+        \end{itemize}
+        A \textbf{new} word \code{lowest}, never seen, becomes \code{low est</w>}, two known pieces.
+      \end{exampleblock}
+      \begin{exampleblock}{Legal flavour}
+        \small
+        If ``appeal'', ``appellant'' and ``appellate'' are frequent, BPE learns \code{appe}, \code{appell}, and so on. The rare \emph{appellee} then splits into known pieces like \code{appell} + \code{ee}.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{The algorithm in a few lines}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \scriptsize
+\begin{verbatim}
+def get_stats(vocab):             # count adjacent pairs
+    pairs = defaultdict(int)
+    for word, freq in vocab.items():
+        s = word.split()
+        for i in range(len(s) - 1):
+            pairs[s[i], s[i+1]] += freq
+    return pairs
+
+vocab = {'l o w </w>': 5, 'l o w e r </w>': 2,
+         'n e w e s t </w>': 6, 'w i d e s t </w>': 3}
+for i in range(num_merges):
+    pairs = get_stats(vocab)
+    best = max(pairs, key=pairs.get)  # most frequent
+    vocab = merge_vocab(best, vocab)  # replace everywhere
+\end{verbatim}
+      {\scriptsize Adapted from the paper's Algorithm 1.}
+    \end{column}
+    \begin{column}{0.41\textwidth}
+      \begin{block}{At test time}
+        \small
+        Split a word into characters, then apply the learned merges \emph{in order}.
+        This works for \emph{any} word. The only possible unknowns are unseen characters.
+      \end{block}
+      \begin{block}{Cost}
+        \small
+        Learning is linear in dictionary size per merge. Real implementations index pairs and update counts incrementally.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Joint BPE: consistent pieces in both languages}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      Two options:
+      \begin{itemize}
+        \item \textbf{Separate BPE}: learn one encoding per language. More compact, and every piece is seen in its own language.
+        \item \textbf{Joint BPE}: learn one encoding on the union of both vocabularies. Names are split \emph{the same way} on both sides, so they are easier to copy or transliterate.
+      \end{itemize}
+      For English--Russian, Russian is transliterated to Latin script for learning, and the merges are mapped back to Cyrillic.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Why consistency matters (paper's example)}
+        \small
+        Name \emph{Mirzayeva}; Russian shown transliterated:
+        \begin{itemize}
+          \item Separate BPE: \code{Mirz|ayeva} $\to$ \code{Mir|za|eva}. The pieces do not line up.
+          \item Joint BPE: \code{Mir|za|yeva} $\to$ \code{Mir|za|eva}. Piece-by-piece transliteration.
+        \end{itemize}
+        Inconsistent splits in training data taught the separate system errors like \emph{rak} $\to$ \emph{pra}.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Experiments}
+
+\begin{frame}{Setup}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Task}: WMT 2015, English$\to$German (4.2M sentence pairs, about 100M tokens) and English$\to$Russian (2.6M pairs, about 50M tokens).
+        \item \textbf{Model}: attention-based RNN encoder--decoder (Bahdanau et al., 2015). Hidden size 1000, embeddings 620.
+        \item \textbf{Training}: Adadelta, batch 80, about 7 days per model; beam size 12.
+        \item \textbf{Metrics}: BLEU, chrF3 (character n-gram F-score), and unigram F1 split into all, \textbf{rare} and \textbf{OOV} words.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Systems compared}
+        \small
+        \begin{itemize}
+          \item \textbf{WUnk}: words; unknowns stay \code{UNK}.
+          \item \textbf{WDict}: words plus back-off dictionary (baseline).
+          \item \textbf{C2-50k}: 50k frequent words, character bigrams for the rest.
+          \item \textbf{BPE-60k}: separate BPE.
+          \item \textbf{BPE-J90k}: joint BPE.
+        \end{itemize}
+        No subword system uses a back-off dictionary.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Results: English$\to$German (newstest2015)}
+  \footnotesize
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    & \multicolumn{2}{c}{BLEU} & \multicolumn{2}{c}{chrF3} & \multicolumn{2}{c}{unigram F1 (\%), ensemble}\\
+    System & single & ens-8 & single & ens-8 & rare & OOV\\
+    \midrule
+    Syntax-based SMT & 24.4 & -- & 55.3 & -- & -- & --\\
+    WUnk & 20.6 & 22.8 & 47.2 & 48.9 & 20.4 & 0.0\\
+    WDict (baseline) & 22.0 & 24.2 & 50.5 & 52.4 & 36.8 & 36.8\\
+    C2-50k & \textbf{22.8} & \textbf{25.3} & 51.9 & 53.5 & 40.5 & 30.9\\
+    BPE-60k & 21.5 & 24.5 & 52.0 & 53.9 & 40.9 & 29.3\\
+    BPE-J90k & \textbf{22.8} & 24.7 & 51.7 & \textbf{54.1} & \textbf{41.8} & 33.6\\
+    \bottomrule
+  \end{tabular}
+  \vspace{2mm}
+  \small
+  \begin{itemize}
+    \item Rare-word unigram F1 rises from 36.8 to \textbf{41.8}.
+    \item For English$\to$German, copying unknown names works well, so the dictionary's OOV score stays high.
+    \item Subword ensembles beat the baseline by 0.3--1.1 BLEU on this pair.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Results: English$\to$Russian (different alphabets)}
+  \footnotesize
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    & \multicolumn{2}{c}{BLEU} & \multicolumn{2}{c}{chrF3} & \multicolumn{2}{c}{unigram F1 (\%), ensemble}\\
+    System & single & ens-8 & single & ens-8 & rare & OOV\\
+    \midrule
+    Phrase-based SMT & 24.3 & -- & 53.8 & -- & -- & --\\
+    WUnk & 18.8 & 22.4 & 46.5 & 49.9 & 25.2 & 0.0\\
+    WDict (baseline) & 19.1 & 22.8 & 47.5 & 51.0 & 26.5 & 6.6\\
+    C2-50k & \textbf{20.9} & \textbf{24.1} & 49.0 & 51.6 & 27.8 & 17.4\\
+    BPE-60k & 20.5 & 23.6 & \textbf{49.8} & 52.7 & 29.7 & 15.6\\
+    BPE-J90k & 20.4 & \textbf{24.1} & 49.7 & \textbf{53.0} & 29.7 & \textbf{18.3}\\
+    \bottomrule
+  \end{tabular}
+  \vspace{2mm}
+  \small
+  \begin{itemize}
+    \item Copying fails across alphabets, so the dictionary gets only 6.6 OOV F1. Subwords reach \textbf{18.3}, because they learn to \emph{transliterate}.
+    \item Joint BPE gains 1.3 BLEU and 2.0 chrF3 over the baseline.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Analysis: rare words and what the models produce}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{By word frequency}: all systems are similar on the 50,000 most frequent words.
+      Between ranks 50,000 and 500,000, representing words as \emph{subwords} beats representing them as rare whole words.
+      Rank 50,000 means about 60 training occurrences; rank 500,000 means about 2.
+      \vspace{1mm}
+
+      \textbf{Lesson}: subword units are \emph{less sparse} than rare words. A \emph{smaller} vocabulary with more subword splitting can \emph{improve} accuracy.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Translations from the paper}
+        \scriptsize
+        \emph{health research institutes} $\to$ reference \emph{Gesundheitsforschungsinstitute}
+        \begin{itemize}
+          \item WDict: \emph{Forschungsinstitute} (drops ``health'').
+          \item BPE-J90k: \emph{Gesundheits$|$forsch$|$ungsin$|$stitute}. Correct, even though the splits ignore morpheme boundaries.
+        \end{itemize}
+        \emph{rakfisk} $\to$ reference \emph{rakfiska} (Cyrillic)
+        \begin{itemize}
+          \item WDict: copies \emph{rakfisk} unchanged.
+          \item BPE-J90k: \emph{rak$|$f$|$iska}. Transliterated correctly.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{Connection to our capstone}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item Our tokenizer is \textbf{byte-level BPE} (the GPT-2 variant): it starts from 256 bytes instead of characters, so even unseen characters cannot be unknown.
+        \item \code{tokenizer.vocab\_size} (default 32,000) sets the number of merges, the paper's only hyperparameter.
+        \item Our \textbf{fertility} metric (tokens per word) is the paper's ``text size'' axis.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Experiments the paper suggests}
+        \small
+        \begin{itemize}
+          \item Vocabulary size sweep: 16k, 32k, 48k. The paper found a smaller vocabulary can help rare words.
+          \item Legal BPE vs GPT-2's web BPE: which splits legal words better?
+          \item Check rare legal terms and Indian names: how many pieces do they take?
+          \item For NER (Phase 2): do BPE splits break entity boundaries?
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Simple, fast, language-independent.
+          \item True open vocabulary with a compact, fixed symbol set.
+          \item One hyperparameter.
+          \item Removes the need for back-off dictionaries.
+          \item Became the default tokenizer family for modern language models.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item Greedy and frequency-based: splits often ignore morphology.
+          \item Vocabulary size was chosen ``somewhat arbitrarily'', by the authors' own account.
+          \item Deterministic segmentation: a word is always split the same way, so the model never sees alternatives.
+          \item Separate BPE can split names inconsistently across languages.
+          \item BLEU and chrF3 disagreed on the best system; gains on rare words are hard to see in aggregate metrics.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions (1): from the paper and after}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Direction & Details\\
+    \midrule
+    Learn the vocabulary size automatically & Proposed in the paper: the best size should depend on the language pair and data size\\
+    Bilingually informed segmentation & Proposed in the paper: create more alignable units, while working without the target text at runtime\\
+    Byte-level BPE & GPT-2 (Radford et al., 2019) runs BPE on bytes, so no symbol can ever be unknown\\
+    Probabilistic segmentation & Unigram LM tokenizer and SentencePiece (Kudo, 2018; Kudo and Richardson, 2018)\\
+    Segmentation as regularisation & BPE-dropout (Provilkov et al., 2020) randomly skips merges during training\\
+    Tokenizer-free models & ByT5 (Xue et al., 2022) and CANINE (Clark et al., 2022) read bytes or characters directly\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Future research directions (2): open questions}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Open in general}
+        \small
+        \begin{itemize}
+          \item What makes a tokenizer ``good'' for a model, beyond compression?
+          \item Fairness across languages: the same content can cost several times more tokens in some languages than in English (Petrov et al., 2023).
+          \item Handling numbers and dates consistently.
+          \item Reducing variance between training runs, which the paper flags as an open problem for NMT.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Open for legal NLP}
+        \small
+        \begin{itemize}
+          \item Keeping citations such as ``(2019) 5 SCC 123'' and section numbers such as ``302'' intact or predictably split.
+          \item Indian names and transliterated terms in English judgments.
+          \item Domain-adaptive vocabularies: add legal merges to a general tokenizer.
+          \item Character offsets for NER: subword boundaries must map back to exact characters.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item Word-level NMT cannot handle an open vocabulary; back-off dictionaries are a brittle patch.
+    \item \textbf{BPE}: start from characters and repeatedly merge the most frequent adjacent pair. Frequent words become single units; rare words become known pieces.
+    \item On German data: 63k types instead of 1.75M, text only 12\% longer, and no unknown tokens.
+    \item Better rare-word translation (EN$\to$DE rare unigram F1 36.8 to 41.8), transliteration across alphabets, and up to 1.1 (EN$\to$DE) and 1.3 (EN$\to$RU) BLEU.
+    \item Joint BPE keeps segmentations consistent across languages.
+    \item For us: the foundation of the Phase-1 tokenizer, and a source of tokenizer experiments.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Sennrich, R., Haddow, B., and Birch, A. (2016). Neural Machine Translation of Rare Words with Subword Units. In \emph{Proceedings of ACL 2016}. arXiv:1508.07909.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Gage (1994) A New Algorithm for Data Compression; Bahdanau et al.\ (2015); Radford et al.\ (2019) GPT-2; Kudo (2018) Subword Regularization; Kudo and Richardson (2018) SentencePiece; Provilkov et al.\ (2020) BPE-Dropout; Xue et al.\ (2022) ByT5; Clark et al.\ (2022) CANINE; Petrov et al.\ (2023) Language Model Tokenizers Introduce Unfairness Between Languages.}
+\end{frame}
+
+\end{document}

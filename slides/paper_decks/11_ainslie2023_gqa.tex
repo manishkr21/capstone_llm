@@ -1,0 +1,367 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+% head diagram: #1 number of kv heads (1, 4, 8) for 8 query heads
+\newcommand{\headdiagram}[2]{%
+  \begin{tikzpicture}[scale=0.42]
+    \foreach \i in {0,...,7}{\fill[accent] (\i,1.6) rectangle ++(0.8,0.8);}
+    \pgfmathtruncatemacro{\g}{8/#1}
+    \foreach \j in {1,...,#1}{
+      \pgfmathsetmacro{\x}{(\j-1)*\g + (\g-0.8)/2}
+      \fill[warm] (\x,0) rectangle ++(0.8,0.8);
+      \foreach \k in {1,...,\g}{\pgfmathsetmacro{\qx}{(\j-1)*\g+\k-1+0.4}\draw[gray] (\qx,1.6)--(\x+0.4,0.8);}
+    }
+    \node[font=\scriptsize,align=center] at (3.9,-0.8) {#2};
+  \end{tikzpicture}}
+\title[GQA]{GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints}
+\subtitle{Ainslie, Lee-Thorp, de Jong, Zemlyanskiy, Lebrón and Sanghai (EMNLP 2023), arXiv:2305.13245}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{J.\ Ainslie, J.\ Lee-Thorp, M.\ de Jong, Y.\ Zemlyanskiy, F.\ Lebrón, S.\ Sanghai. \emph{GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints}. EMNLP 2023. Google Research.}
+{Let \emph{groups} of query heads share one key/value head. Quality stays close to full multi-head attention, while inference is almost as fast as single-KV-head multi-query attention.}
+{Our A4 uses GQA: 12 query heads share 4 key/value heads, so its KV-cache is 3$\times$ smaller. That matters for batched generation of 128-word continuations.}
+{Main deck: ``A4: efficient decoder''. Glossary: ``Grouped-query attention''.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Why is generation slow? Memory bandwidth}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      When a decoder generates one new token, it must \textbf{read from memory}:
+      \begin{itemize}
+        \item all model weights, and
+        \item the cached keys and values of \emph{every previous token}, in every layer and head.
+      \end{itemize}
+      The arithmetic for one token is small, so the GPU mostly waits for data: generation is \textbf{memory-bandwidth bound}.
+      \vspace{1mm}
+
+      The KV-cache grows with sequence length, batch size, layers and number of KV heads. For long inputs it dominates.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Analogy}
+        \small
+        A judge writing an order, one word at a time, must re-read every note taken so far before each word.
+        The thinking is quick; fetching the notes is slow. Fewer, more compact notes means faster writing.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Multi-head vs multi-query attention}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Multi-head attention (MHA)}: $H$ query heads, $H$ key heads, $H$ value heads. Best quality; largest KV-cache.
+        \item \textbf{Multi-query attention (MQA)} (Shazeer, 2019): $H$ query heads share \emph{one} key head and \emph{one} value head. KV-cache is $H\times$ smaller and much faster.
+      \end{itemize}
+      \vspace{1mm}
+      Problems with MQA:
+      \begin{itemize}
+        \item \textbf{quality degradation} and training instability;
+        \item training a separate MQA model just for fast inference is costly;
+        \item popular models (T5, LLaMA 1) were trained with MHA.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \headdiagram{8}{MHA: 8 KV heads}\\[2mm]
+      \headdiagram{1}{MQA: 1 KV head}\\[1mm]
+      {\scriptsize Blue = query heads, orange = key/value heads.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea}
+
+\begin{frame}{Grouped-query attention (GQA)}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Split the $H$ query heads into $G$ \textbf{groups}. Each group shares one key head and one value head.
+      \begin{itemize}
+        \item GQA-$1$ = MQA (one group).
+        \item GQA-$H$ = MHA (one head per group).
+        \item GQA-$G$ in between: KV-cache is $H/G$ times smaller than MHA.
+      \end{itemize}
+      \vspace{1mm}
+      Why it scales well: larger models have more heads, so MQA's single KV head becomes an ever more \emph{aggressive} cut. GQA keeps the \emph{same proportional} saving as models grow.
+      \vspace{1mm}
+
+      GQA is applied to decoder self-attention and cross-attention, not to encoder self-attention, which is computed in parallel.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \headdiagram{4}{GQA-4: 4 KV heads, 2 queries per group}\\[2mm]
+      \headdiagram{2}{GQA-2: 2 KV heads, 4 queries per group}
+      \vspace{1mm}
+
+      \begin{exampleblock}{Analogy}
+        \small
+        MHA: every student has a textbook. MQA: the class shares one. GQA: each table of three shares one.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Easy worked example: our A4's KV-cache}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      A4: 10 layers, 12 query heads, head size 64. KV-cache numbers \emph{per token per layer} = $2\times(\text{KV heads})\times64$.
+      \vspace{1mm}
+
+      \scriptsize
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        & KV heads & per token/layer & 1,024 tok (fp16)\\
+        \midrule
+        MHA & 12 & 1,536 & 31.5 MB\\
+        \textbf{GQA-4 (A4)} & 4 & 512 & \textbf{10.5 MB}\\
+        MQA & 1 & 128 & 2.6 MB\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize e.g.\ $1{,}536\times1{,}024\times10\text{ layers}\times2\text{ bytes}=31.5$ MB per sequence.}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{In our generation script}
+        \small
+        With a batch of 16 prompts: MHA needs about \textbf{503 MB} of KV-cache, GQA-4 about \textbf{168 MB}.
+        On a 16 GB T4 this leaves room for bigger batches, so all test prompts generate faster.
+      \end{exampleblock}
+      \begin{block}{A4 also uses sliding windows}
+        \small
+        Local layers keep only 255 cached keys, so their cache shrinks further. GQA and sliding windows multiply their savings.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Uptraining: converting an existing MHA model}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Instead of training a GQA model from scratch:
+      \begin{enumerate}
+        \item \textbf{Convert} the checkpoint: build each group's key (and value) projection by \textbf{mean-pooling} the projections of the heads in that group.
+        \item \textbf{Uptrain}: continue pre-training for a small fraction $\alpha$ of the original steps, with the original recipe.
+      \end{enumerate}
+      \vspace{1mm}
+      With $\alpha=0.05$ (5\% of the original compute), uptraining T5-XXL took about 600 TPUv3 chip-days.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Mean-pooling example}
+        \small
+        12 heads into 4 groups of 3. For group 1:
+        \[
+          W_K^{(g_1)}=\tfrac13\big(W_K^{(1)}+W_K^{(2)}+W_K^{(3)}\big)
+        \]
+        and the same for $W_V$. Query projections are unchanged.
+        \vspace{1mm}
+
+        This keeps the \emph{average} of what the three heads were looking for, so less pre-trained knowledge is lost than by choosing one head.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Experiments}
+
+\begin{frame}{Setup}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Models}: T5.1.1 encoder--decoder. MHA T5-Large and T5-XXL; MQA-XXL and GQA-8-XXL uptrained with $\alpha=0.05$ from public checkpoints.
+        \item \textbf{Tasks}: summarisation (CNN/Daily Mail, arXiv, PubMed, MediaSum, Multi-News), translation (WMT14 EN--DE), question answering (TriviaQA).
+        \item \textbf{Fine-tuning}: learning rate 0.001, batch 128, dropout 0.1; inputs up to 2,048 tokens and outputs up to 512 for long summarisation; greedy decoding.
+        \item \textbf{Timing}: time per sample on TPUv4, with each model's parallelisation optimised separately.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{alertblock}{Why no GLUE?}
+        \small
+        Classification tasks do not generate text autoregressively, so the KV-cache bottleneck does not arise.
+        The paper focuses on generation-heavy tasks, as are our Phases 1 and 6.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Main results}
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    Model & Time/sample & Average & CNN R1 & PubMed R1 & MultiNews R1 & TriviaQA F1\\
+    \midrule
+    MHA-Large & 0.37 & 46.0 & 42.9 & 46.2 & 46.6 & 78.2\\
+    MHA-XXL & 1.51 & \textbf{47.2} & \textbf{43.8} & 47.5 & 46.9 & \textbf{81.9}\\
+    MQA-XXL & \textbf{0.24} & 46.6 & 43.0 & 46.9 & 46.5 & 81.3\\
+    \textbf{GQA-8-XXL} & 0.28 & 47.1 & 43.5 & \textbf{47.7} & \textbf{47.2} & 81.6\\
+    \bottomrule
+  \end{tabular}
+  \vspace{1mm}
+
+  {\scriptsize Averages also include arXiv, MediaSum and WMT. Time per sample on TPUv4.}
+  \vspace{2mm}
+  \raggedright
+  \begin{exampleblock}{Reading it}
+    \small
+    GQA-8-XXL is \textbf{5.4$\times$ faster} than MHA-XXL (0.28 vs 1.51) and only 0.1 lower on average.
+    It is nearly as fast as MQA (0.28 vs 0.24) but 0.5 better. Even MQA-XXL beats MHA-Large on both speed and quality.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Ablations}
+  \begin{columns}[T]
+    \begin{column}{0.33\textwidth}
+      \begin{block}{How to convert}
+        \small
+        On T5-Large uptrained to MQA:
+        \textbf{mean-pooling} beat keeping the first head, which beat random initialisation.
+        \vspace{1mm}
+
+        The more pre-trained information is preserved, the better.
+      \end{block}
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \begin{block}{How much uptraining}
+        \small
+        GQA is already reasonable right after conversion; MQA needs uptraining to be useful.
+        \vspace{1mm}
+
+        Both gain from 5\% uptraining, with diminishing returns at 10\%.
+      \end{block}
+    \end{column}
+    \begin{column}{0.31\textwidth}
+      \begin{block}{How many groups}
+        \small
+        Going from 1 group (MQA) to 8 adds only modest inference time. Cost grows faster as groups approach MHA.
+        \vspace{1mm}
+
+        8 groups were chosen as a good middle ground.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{GQA in our capstone}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item A4 trains GQA \textbf{from scratch}, with no uptraining, since the rules require training from scratch.
+        \item Our \code{Attention} module stores keys and values in the cache \emph{before} repeating them across query heads, so the cache holds only 4 heads.
+        \item The paper evaluated only encoder--decoder models; it predicts that GQA's advantage over MQA should be \emph{stronger} in decoder-only models like A4.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Experiments worth running}
+        \small
+        \begin{itemize}
+          \item A4 with $n_{kv}\in\{1,4,12\}$ (MQA, GQA-4, MHA): validation loss vs generation speed and peak memory.
+          \item Keep parameters matched: fewer KV heads free parameters that can go into $d_{ff}$ or depth.
+          \item Measure tokens per second when generating the test set.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Simple generalisation that contains MHA and MQA as special cases.
+          \item Near-MHA quality at near-MQA speed.
+          \item Cheap conversion of existing checkpoints (5\% compute).
+          \item Scales well: the saving stays proportional as models grow.
+          \item Removes wasted replication of KV heads when sharding big models.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations (several stated by the authors)}
+        \small
+        \begin{itemize}
+          \item Only encoder--decoder models were evaluated.
+          \item No comparison with a GQA model trained from scratch.
+          \item Long-output quality is measured with ROUGE, which the authors call flawed.
+          \item Fewer KV heads may still reduce capacity for some tasks.
+          \item Speed-ups are measured on TPUs; GPU gains depend on kernels.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Suggested by the paper's limitations}
+      \begin{itemize}
+        \item Decoder-only models, where GQA is expected to help more.
+        \item Uptraining vs training from scratch, at equal compute.
+        \item Better evaluation of long generated outputs.
+      \end{itemize}
+      \textbf{What followed}
+      \begin{itemize}
+        \item GQA became standard in open models, e.g.\ Llama 2 70B, Mistral 7B and Gemma 2.
+        \item Other KV-cache reductions: multi-head latent attention (DeepSeek-V2, 2024) compresses keys and values into a small latent; cross-layer KV sharing; KV-cache quantisation.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Open questions}
+        \small
+        \begin{itemize}
+          \item How many KV heads does a model \emph{really} need, per layer?
+          \item Should different layers use different group counts?
+          \item Does sharing KV heads hurt retrieval of rare facts from long contexts?
+          \item For legal NLP: long judgments make the KV-cache the main memory cost. Can GQA plus sliding windows let a free GPU process whole judgments?
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item Decoding is limited by \textbf{memory bandwidth}: reading the KV-cache at every step.
+    \item MQA (one KV head) is fast but loses quality; MHA is accurate but slow.
+    \item \textbf{GQA}: $G$ groups of query heads, one KV head per group. KV-cache is $H/G$ times smaller.
+    \item Existing MHA models can be converted by \textbf{mean-pooling} KV heads and \textbf{uptraining} with 5\% of the compute.
+    \item GQA-8-XXL: 47.1 average vs 47.2 for MHA-XXL, at 5.4$\times$ the speed and close to MQA's speed.
+    \item For us: A4's 4 KV heads cut its KV-cache 3$\times$ (31.5 MB to 10.5 MB per 1,024-token sequence).
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Ainslie, J., Lee-Thorp, J., de Jong, M., Zemlyanskiy, Y., Lebrón, F., and Sanghai, S.\ (2023). GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints. In \emph{Proceedings of EMNLP 2023}. arXiv:2305.13245.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Shazeer (2019) Fast Transformer Decoding: One Write-Head is All You Need; Komatsuzaki et al.\ (2022) Sparse Upcycling; Raffel et al.\ (2020) T5; Touvron et al.\ (2023) Llama 2; Jiang et al.\ (2023) Mistral 7B; DeepSeek-AI (2024) DeepSeek-V2.}
+\end{frame}
+
+\end{document}

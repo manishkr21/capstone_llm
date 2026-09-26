@@ -1,0 +1,359 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[GLU Variants]{GLU Variants Improve Transformer}
+\subtitle{Noam Shazeer (2020), arXiv:2002.05202}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{N.\ Shazeer. \emph{GLU Variants Improve Transformer}. arXiv preprint, February 2020. Google.}
+{Replace the Transformer's ReLU feed-forward layer with a \textbf{gated} version, such as SwiGLU or GEGLU, at equal parameters and compute. Perplexity and downstream scores improve.}
+{Our A4 uses exactly the paper's parameter-matched SwiGLU: $d_{\text{model}}=768$, $d_{ff}=2048$, three matrices, no biases.}
+{Main deck: ``A4: efficient decoder''. Glossary: ``Activation functions'' (SwiGLU as a valve).}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Background}
+
+\begin{frame}{The feed-forward network (FFN) in a Transformer}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Each Transformer block has attention (tokens exchange information) and an \textbf{FFN}, applied to each token on its own.
+      \vspace{1mm}
+
+      Original (Vaswani et al., 2017), and the bias-free T5 version used here:
+      \[
+        \text{FFN}_{\text{ReLU}}(x)=\max(xW_1,0)\,W_2
+      \]
+      Other activations had been proposed:
+      \[
+        \text{GELU}(x)=x\,\Phi(x),\qquad \text{Swish}_\beta(x)=x\,\sigma(\beta x)
+      \]
+      About two thirds of a Transformer block's parameters sit in the FFN, so its design matters.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Intuition}
+        \small
+        Attention gathers facts from other tokens, e.g.\ ``he'' refers to ``respondent''.
+        The FFN is where each token \emph{processes} what it gathered: a learned bank of feature detectors.
+      \end{exampleblock}
+      \begin{block}{Symbols}
+        \small
+        $x\in\mathbb{R}^{d}$: one token's vector. $W_1\in\mathbb{R}^{d\times d_{ff}}$, $W_2\in\mathbb{R}^{d_{ff}\times d}$. Typically $d_{ff}=4d$.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Gated Linear Units (Dauphin et al., 2016)}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      A \textbf{GLU} multiplies two linear projections element-wise; one passes through a sigmoid:
+      \[
+        \text{GLU}(x)=\sigma(xW+b)\otimes(xV+c)
+      \]
+      \begin{itemize}
+        \item $xV$: the \emph{content}.
+        \item $\sigma(xW)$: a \emph{gate} between 0 and 1 deciding how much content passes.
+      \end{itemize}
+      Dropping the sigmoid gives the \textbf{bilinear} layer:
+      \[
+        \text{Bilinear}(x)=(xW+b)\otimes(xV+c)
+      \]
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Analogy: a valve on a pipe}
+        \small
+        Water (content) flows through a pipe; a valve (gate) opens or closes.
+        Both the water and the valve setting depend on the input.
+        A plain ReLU is a one-way valve that can only be fully shut (negative) or open in proportion (positive).
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: GLU variants in the FFN}
+
+\begin{frame}{The proposed variants}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \small
+      Replace the first linear layer and activation of the FFN with a GLU variant (no biases):
+      \begin{align*}
+        \text{FFN}_{\text{GLU}}(x)&=(\sigma(xW)\otimes xV)\,W_2\\
+        \text{FFN}_{\text{Bilinear}}(x)&=(xW\otimes xV)\,W_2\\
+        \text{FFN}_{\text{ReGLU}}(x)&=(\max(0,xW)\otimes xV)\,W_2\\
+        \text{FFN}_{\text{GEGLU}}(x)&=(\text{GELU}(xW)\otimes xV)\,W_2\\
+        \text{FFN}_{\text{SwiGLU}}(x)&=(\text{Swish}_1(xW)\otimes xV)\,W_2
+      \end{align*}
+      $\text{Swish}_1(z)=z\,\sigma(z)$, also called SiLU.
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{block}{Fair comparison: equal parameters}
+        \small
+        GLU variants have \textbf{three} matrices ($W$, $V$, $W_2$) instead of two.
+        To keep parameters and compute equal, shrink $d_{ff}$ by $\tfrac23$:
+        \[
+          2\cdot d\cdot 3072 \;=\; 3\cdot d\cdot 2048
+        \]
+        For $d=768$: $4.72$M parameters per FFN in both cases.
+      \end{block}
+      \begin{exampleblock}{Our A4}
+        \small
+        \code{SwiGLU(d\_model=768, d\_ff=2048)}: identical to the paper's matched setting.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Easy worked example (2 hidden units)}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      Suppose for one token: gate pre-activation $xW=[2,\,-1]$ and content $xV=[3,\,4]$.
+      \vspace{1mm}
+
+      \scriptsize
+      \begin{tabular}{@{}ll@{}}
+        \toprule
+        Layer & Hidden vector (before $W_2$)\\
+        \midrule
+        ReLU (only $xW$) & $[2,\,0]$\\
+        GLU & $\sigma(xW)\otimes xV=[2.64,\,1.08]$\\
+        Bilinear & $xW\otimes xV=[6,\,-4]$\\
+        ReGLU & $\max(0,xW)\otimes xV=[6,\,0]$\\
+        SwiGLU & $\text{Swish}(xW)\otimes xV=[5.28,\,-1.08]$\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize $\sigma(2)=0.88$, $\sigma(-1)=0.27$; Swish$(2)=2\sigma(2)=1.76$, Swish$(-1)=-0.27$.}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{What to notice}
+        \small
+        \begin{itemize}
+          \item In ReLU, unit 2 is simply off.
+          \item In gated layers, the output is a \emph{product} of two input-dependent signals. The network can express ``this feature matters only when that one is present''.
+          \item SwiGLU lets a small negative value through (smooth), unlike ReGLU's hard zero.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Experiments}
+
+\begin{frame}{Setup}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item Same code, model and task as the T5 base model: encoder--decoder, 12+12 layers, $d_{\text{model}}=768$, 12 heads, $d_k=d_v=64$.
+        \item FFN: $d_{ff}=3072$ for ReLU, GELU and Swish; $d_{ff}=2048$ for the GLU variants.
+        \item Pre-training: span-filling on C4, 524,288 steps, 128 examples $\times$ 512 input tokens per batch; Adafactor, inverse-square-root schedule, linear decay over the last 10\%.
+        \item \textbf{No dropout during pre-training}, a departure from T5 that gave better results.
+        \item Four short runs (65,536 steps) per variant measure run-to-run noise.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{Measures}
+        \small
+        \begin{itemize}
+          \item Held-out \textbf{log-perplexity} on the span-filling task (C4). Lower is better.
+          \item Fine-tuning on a mixture of GLUE, SuperGLUE and SQuAD; development-set scores.
+        \end{itemize}
+      \end{block}
+      \begin{exampleblock}{Cost}
+        \small
+        Each training step took about 0.15 s on a 32-core TPUv2 cluster. All variants cost the same by design.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Pre-training perplexity}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \footnotesize
+      Held-out log-perplexity (lower is better); standard deviation over 4 runs in brackets.
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        FFN variant & 65,536 steps & 524,288 steps\\
+        \midrule
+        ReLU (baseline) & 1.997 (0.005) & 1.677\\
+        GELU & 1.983 (0.005) & 1.679\\
+        Swish & 1.994 (0.003) & 1.683\\
+        GLU & 1.982 (0.006) & 1.663\\
+        Bilinear & 1.960 (0.005) & 1.648\\
+        \textbf{GEGLU} & \textbf{1.942} (0.004) & \textbf{1.633}\\
+        \textbf{SwiGLU} & 1.944 (0.010) & 1.636\\
+        ReGLU & 1.953 (0.003) & 1.645\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Reading it}
+        \small
+        \begin{itemize}
+          \item Changing only the activation (GELU, Swish) barely helps.
+          \item \textbf{Every gated variant beats every ungated one.}
+          \item GEGLU and SwiGLU are best: about 0.04 lower than ReLU after full training, far above the run-to-run noise of about 0.005.
+          \item Even the bilinear layer (no non-linearity in the gate) beats ReLU.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Downstream fine-tuning (development sets)}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \scriptsize
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        FFN variant & GLUE & SGLUE & SQuAD F1\\
+        \midrule
+        ReLU & 83.80 & 72.76 & 90.87\\
+        GELU & 83.86 & 72.98 & 90.79\\
+        Swish & 83.60 & 72.40 & 90.76\\
+        GLU & 84.20 & 73.95 & 90.69\\
+        GEGLU & 84.12 & 73.96 & 91.12\\
+        Bilinear & 83.79 & 73.81 & 91.06\\
+        SwiGLU & 84.36 & \textbf{74.56} & 91.03\\
+        ReGLU & \textbf{84.67} & 73.66 & \textbf{91.18}\\
+        \midrule
+        T5 paper baseline & 83.28 & 71.36 & 88.81\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize T5's reported standard deviations: GLUE 0.235, SuperGLUE 0.416.}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Reading it}
+        \small
+        \begin{itemize}
+          \item GLU variants are best on most tasks, e.g.\ SuperGLUE 74.56 (SwiGLU) vs 72.76 (ReLU).
+          \item The results are noisy: each model was fine-tuned only once.
+          \item The paper's ReLU model beats the original T5 numbers (83.80 vs 83.28). The author attributes this to removing dropout during pre-training.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{Relevance to our capstone}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item A4 uses SwiGLU; A1 and A3 use GELU; A2 uses ReLU. This makes the FFN one of the \emph{differences} between our architectures.
+        \item The paper predicts a small but real perplexity gain for A4 from the FFN alone.
+        \item Our default \code{dropout: 0.0} matches the paper's finding that no dropout helps pre-training when data is plentiful.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{A controlled ablation you could run}
+        \small
+        Train A1 twice, identical except the FFN:
+        \begin{itemize}
+          \item GELU, $d_{ff}=3072$
+          \item SwiGLU, $d_{ff}=2048$
+        \end{itemize}
+        Same parameters, same data. Compare validation loss and dev BERTScore.
+        This separates the FFN effect from A4's other changes (GQA, RoPE, sliding window).
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item A tiny code change with consistent gains.
+          \item A fair comparison: parameters and compute matched.
+          \item Measures run-to-run noise for perplexity.
+          \item No extra cost at training or inference.
+          \item Adopted widely in later large models.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item \textbf{No explanation} of why gating works. The author jokingly credits ``divine benevolence''.
+          \item One model size and one architecture (T5 base).
+          \item Fine-tuning results come from one run each, and are noisy.
+          \item Pre-training changes (no dropout) are mixed into the comparison with T5's numbers.
+          \item A very short paper, with no ablation of $d_{ff}$ or scaling behaviour.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{What followed}
+      \begin{itemize}
+        \item SwiGLU became standard in large language models, e.g.\ PaLM (Chowdhery et al., 2022) and LLaMA (Touvron et al., 2023).
+        \item GEGLU is used in the T5 v1.1 checkpoints and in the Gemma models.
+        \item Sparse FFNs: mixture-of-experts layers (e.g.\ Switch Transformer, Fedus et al., 2022) replace one FFN with many expert FFNs, and only a few run per token.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Open questions}
+        \small
+        \begin{itemize}
+          \item \textbf{Why} does multiplicative gating help: better optimisation, or more expressive functions?
+          \item Does the gain grow, shrink or vanish at larger scale?
+          \item What is the best $d_{ff}$ ratio for gated FFNs?
+          \item Do gated FFNs store factual knowledge differently?
+          \item For legal NLP: do gated FFNs help with rare legal terms, or with long formulaic sentences?
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item The Transformer FFN is $\max(xW_1,0)W_2$. Changing only the activation (GELU, Swish) gives little.
+    \item \textbf{Gated} FFNs multiply a content projection by an activated gate projection: GLU, Bilinear, ReGLU, GEGLU, SwiGLU.
+    \item At equal parameters ($d_{ff}$ reduced by $\tfrac23$), all gated variants lower pre-training perplexity; GEGLU and SwiGLU are best (1.633 and 1.636 vs 1.677).
+    \item Downstream scores improve on most tasks, e.g.\ SuperGLUE 74.56 vs 72.76.
+    \item For us: the reason A4 uses SwiGLU with $d_{ff}=2048$.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Shazeer, N.\ (2020). GLU Variants Improve Transformer. arXiv:2002.05202.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Dauphin et al.\ (2016) Language Modeling with Gated Convolutional Networks; Hendrycks and Gimpel (2016) GELU; Ramachandran et al.\ (2017) Swish; Raffel et al.\ (2020) T5; Chowdhery et al.\ (2022) PaLM; Fedus et al.\ (2022) Switch Transformers; Touvron et al.\ (2023) LLaMA.}
+\end{frame}
+
+\end{document}

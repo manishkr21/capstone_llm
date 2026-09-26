@@ -1,0 +1,388 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[RoFormer / RoPE]{RoFormer: Enhanced Transformer with Rotary Position Embedding}
+\subtitle{Su, Lu, Pan, Murtadha, Wen and Liu (2021; Neurocomputing 2024), arXiv:2104.09864}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{J.\ Su, Y.\ Lu, S.\ Pan, A.\ Murtadha, B.\ Wen, Y.\ Liu. \emph{RoFormer: Enhanced Transformer with Rotary Position Embedding}. arXiv 2021 (v5, 2023). Zhuiyi Technology.}
+{Encode position by \textbf{rotating} each query and key vector by an angle proportional to its position. The attention score then depends only on the \emph{relative} distance between tokens.}
+{Our A4 uses RoPE (\code{Rotary} in \code{layers.py}). The paper also tests on a \textbf{legal} similar-case matching task, close to our Phase 7.}
+{Main deck: ``A4: efficient decoder''. Glossary: ``Positional information (2)''.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Attention needs positions; existing methods add them}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Self-attention is position-agnostic. Two families of fixes existed:
+      \begin{itemize}
+        \item \textbf{Absolute}: add a position vector to each word vector, $W(x_i+p_i)$. Learned (BERT, GPT) or sinusoidal (Vaswani et al.).
+        \item \textbf{Relative}: change the attention score to include the offset $m-n$, e.g.\ Shaw et al.\ (2018), Transformer-XL, T5's bias $b_{m-n}$, DeBERTa.
+      \end{itemize}
+      Relative methods fit language better: ``the word two positions back'' matters more than ``the word at position 417''.
+      \vspace{1mm}
+
+      \textbf{Paper's observation}: nearly all methods \emph{add} position information to the representation or score. That makes them hard to combine with \textbf{linear attention}.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{The goal, stated precisely}
+        \small
+        Find position-aware query and key functions $f_q$, $f_k$ whose dot product depends only on the words and their \emph{offset}:
+        \[
+          \langle f_q(x_m,m),\,f_k(x_n,n)\rangle=g(x_m,x_n,m-n)
+        \]
+      \end{exampleblock}
+      \begin{exampleblock}{Legal intuition}
+        \small
+        ``Section'' followed two tokens later by ``302'' should look the same whether it appears on page 1 or page 30 of a judgment.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: rotate queries and keys}
+
+\begin{frame}{The 2D case: rotation}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      View a 2D vector as a complex number. Multiply the query at position $m$ by $e^{im\theta}$, and the key at position $n$ by $e^{in\theta}$. That is, rotate them by angles $m\theta$ and $n\theta$:
+      \[
+        f_q(x_m,m)=(W_qx_m)\,e^{im\theta},\quad f_k(x_n,n)=(W_kx_n)\,e^{in\theta}
+      \]
+      Their dot product keeps only the \emph{difference} of angles:
+      \[
+        g=\text{Re}\big[(W_qx_m)(W_kx_n)^{*}e^{i(m-n)\theta}\big]
+      \]
+      As a matrix, for position $m$:
+      \[
+        \begin{pmatrix}\cos m\theta & -\sin m\theta\\ \sin m\theta & \cos m\theta\end{pmatrix}
+      \]
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \begin{tikzpicture}[scale=1.25]
+        \draw[->,gray] (-0.2,0)--(1.4,0); \draw[->,gray] (0,-0.2)--(0,1.4);
+        \draw[very thick,accent,->] (0,0)--(1.2,0) node[below,font=\scriptsize]{$q$ at $m=0$};
+        \draw[very thick,accent!60,->] (0,0)--({1.2*cos(60)},{1.2*sin(60)}) node[above right,font=\scriptsize]{$q$ at $m=2$};
+        \draw[warm,->] (0.5,0) arc (0:60:0.5);
+        \node[font=\scriptsize,warm] at (0.62,0.22) {$2\theta$};
+      \end{tikzpicture}
+      \vspace{1mm}
+
+      \small
+      Rotation never changes a vector's length, only its direction. So RoPE changes \emph{where} a token is, not \emph{what} it says.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Easy worked example: only the offset matters}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Let $q=k=[1,0]$ and $\theta=30^\circ$ per position.
+      \vspace{1mm}
+
+      \textbf{Case A}: query at $m=3$, key at $n=5$.
+      \begin{itemize}
+        \item $q$ rotated by $90^\circ$: $[0,\,1]$
+        \item $k$ rotated by $150^\circ$: $[-0.866,\,0.5]$
+        \item $q\cdot k = 0.5$
+      \end{itemize}
+      \textbf{Case B}: shift both by 10, so $m=13$, $n=15$.
+      \begin{itemize}
+        \item $q$ rotated by $390^\circ=30^\circ$: $[0.866,\,0.5]$
+        \item $k$ rotated by $450^\circ=90^\circ$: $[0,\,1]$
+        \item $q\cdot k = 0.5$
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Result}
+        \small
+        Both give $0.5=\cos 60^\circ$, because the offset is 2 positions ($2\times30^\circ$) in both cases.
+        \vspace{1mm}
+
+        The absolute positions changed, but the attention score did not. RoPE encodes \textbf{absolute} position (each vector's own angle) and yields \textbf{relative} scores.
+      \end{exampleblock}
+      \begin{alertblock}{Compare with adding positions}
+        \small
+        With $x+p$, the score contains cross terms such as $x_m^\top W p_n$ that depend on absolute positions. Rotation avoids them.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The general form: many rotating pairs}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \small
+      Split the $d$-dimensional vector into $d/2$ pairs. Rotate pair $i$ at its own speed $\theta_i$:
+      \[
+        f_{q,k}(x_m,m)=R^d_{\Theta,m}\,W_{q,k}\,x_m,\qquad \theta_i=10000^{-2(i-1)/d}
+      \]
+      $R^d_{\Theta,m}$ is block-diagonal with $2\times2$ rotation blocks. Then
+      \[
+        q_m^\top k_n=x_m^\top W_q^\top R^d_{\Theta,n-m}W_kx_n
+      \]
+      \textbf{Efficient computation} (no matrix needed):
+      \[
+        R_{\Theta,m}x = x\otimes\cos(m\theta) + \text{rot}(x)\otimes\sin(m\theta)
+      \]
+      where rot swaps each pair and negates one element: $(x_1,x_2)\to(-x_2,x_1)$.
+    \end{column}
+    \begin{column}{0.41\textwidth}
+      \begin{exampleblock}{Speeds for head size $d=64$}
+        \small
+        \begin{itemize}
+          \item Pair 1: $\theta_1=1$ radian per position. Fast; tells neighbours apart.
+          \item Pair 32: $\theta_{32}\approx1.3\times10^{-4}$. Very slow; tracks long distances.
+        \end{itemize}
+        The same frequency ladder as sinusoidal encodings, but applied by \emph{multiplication}.
+      \end{exampleblock}
+      \begin{block}{Our implementation}
+        \small
+        \code{Rotary} pairs dimension $j$ with $j+d/2$ (``rotate half'') instead of adjacent dimensions. This is equivalent up to a fixed reordering of dimensions.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Properties of RoPE}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{enumerate}
+        \item \textbf{Relative by construction}: the score depends on $m-n$ only.
+        \item \textbf{Norm preserving}: rotation matrices are orthogonal, which keeps training stable.
+        \item \textbf{Long-term decay}: with $\theta_i=10000^{-2i/d}$, an upper bound on the score shrinks as the distance grows. Far-apart tokens interact less, which suits language.
+        \item \textbf{Works with linear attention}: rotation can be applied after the feature maps of linear attention (e.g.\ Performer), which additive relative methods cannot do.
+        \item \textbf{Flexible length}: no position table, so there is no hard maximum length.
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Long-term decay, intuitively}
+        \small
+        For a nearby token, all 32 pairs are rotated by small, similar angles: their contributions add up.
+        For a distant token, the fast pairs have spun to effectively random angles and cancel out.
+        Only the slow pairs still line up, so the total score tends to shrink.
+      \end{exampleblock}
+      \begin{alertblock}{Caution}
+        \small
+        ``No position table'' does not mean it works well beyond the training length. Later work (e.g.\ the ALiBi paper) found RoPE extrapolates poorly without adjustments.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Experiments}
+
+\begin{frame}{Translation and pre-training}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Machine translation} (WMT14 EN--DE, same setup as Transformer-base):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lc@{}}
+        \toprule
+        Model & BLEU\\
+        \midrule
+        Transformer-base & 27.3\\
+        RoFormer & \textbf{27.5}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      \textbf{BERT pre-training} (BookCorpus + Wikipedia, 100k steps, batch 64, length 512): replacing BERT's position encoding with RoPE gave \textbf{faster convergence} of the masked-LM loss.
+      \vspace{1mm}
+
+      \textbf{Performer + RoPE} (Enwik8, 12 layers, length 1024): lower loss and faster convergence than Performer without RoPE.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{alertblock}{How strong is this evidence?}
+        \small
+        \begin{itemize}
+          \item The BLEU gain is small (0.2) and from one run.
+          \item Pre-training results are shown as loss curves, not final numbers.
+          \item All experiments ran on two servers with 4 V100 GPUs each, a modest scale.
+        \end{itemize}
+        The strongest argument for RoPE is its clean mathematics, and its later adoption by many large models.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{GLUE fine-tuning: a mixed picture}
+  \centering
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    Model & MRPC & SST-2 & QNLI & STS-B & QQP & MNLI (m/mm)\\
+    \midrule
+    BERT & 88.9 & \textbf{93.5} & \textbf{90.5} & 85.8 & 71.2 & \textbf{84.6/83.4}\\
+    RoFormer & \textbf{89.5} & 90.7 & 88.0 & \textbf{87.0} & \textbf{86.4} & 80.2/79.8\\
+    \bottomrule
+  \end{tabular}
+  \vspace{3mm}
+
+  \raggedright
+  RoFormer is better on 3 of 6 tasks (MRPC, STS-B, QQP) and worse on the other 3.
+  \vspace{2mm}
+
+  \begin{exampleblock}{Honest reading}
+    \small
+    The authors highlight the three large wins. The table also shows clear losses on SST-2, QNLI and MNLI.
+    This is a good example of why a report should state both sides, as our capstone asks.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Long legal documents: CAIL2019-SCM}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Task}: 8,964 triplets (A, B, C) of case fact descriptions from the Supreme People's Court of China. Is case B or case C more similar to case A? Most documents exceed 512 characters.
+      \vspace{1mm}
+
+      Chinese RoFormer (from WoBERT, word-level tokens) pre-trained on about 34 GB, in stages with maximum lengths from 128 to 1,536.
+      \vspace{1mm}
+
+      \footnotesize
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        Model (max length) & Validation & Test\\
+        \midrule
+        BERT-512 & 64.13\% & 67.77\%\\
+        WoBERT-512 & 64.07\% & 68.10\%\\
+        RoFormer-512 & 64.13\% & 68.29\%\\
+        \textbf{RoFormer-1024} & \textbf{66.07\%} & \textbf{69.79\%}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Why this matters to us}
+        \small
+        This is legal case similarity, very close to our \textbf{Phase 7 prior case retrieval}.
+        \begin{itemize}
+          \item At 512 tokens, RoFormer ties the baselines.
+          \item Allowing 1,024 tokens gains 1.5 test points over RoFormer-512, and 1.7 over WoBERT-512.
+        \end{itemize}
+        Reading \emph{more} of the judgment helps, and RoPE makes the longer input usable.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{RoPE in our capstone}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item A4 applies RoPE to queries and keys in every layer, with $\theta=10000$.
+        \item RoPE is applied \emph{before} keys enter the KV-cache, so cached keys keep their positions. Our cache-correctness test checks exactly this.
+        \item With sliding windows, RoPE's relative nature means a key's rotation stays valid however much of the cache is dropped.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Experiments worth running}
+        \small
+        \begin{itemize}
+          \item A1 with learned positions vs A1 with RoPE, everything else equal.
+          \item Evaluate at 1,024 and at 2,048 tokens to measure extrapolation; compare with ALiBi (A3).
+          \item Phase 7: does a longer context help case retrieval, as on CAIL2019-SCM?
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Elegant derivation: relative scores from absolute rotations.
+          \item No learned position parameters.
+          \item Norm-preserving and cheap to compute.
+          \item Compatible with linear attention and KV-caching.
+          \item Became the standard in many modern large language models.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item The authors admit they cannot fully explain why it converges faster, or why it does better on long texts.
+          \item Small-scale experiments, few repeated runs.
+          \item Mixed GLUE results.
+          \item Extrapolation beyond the trained length is weak without extra techniques.
+          \item Needs an even head dimension, and the base $10000$ is a hand-set choice.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{What followed}
+      \begin{itemize}
+        \item Adopted by GPT-NeoX, PaLM, LLaMA and many others.
+        \item \textbf{Context extension}: Position Interpolation (Chen et al., 2023) squeezes long inputs into the trained angle range; YaRN (Peng et al., 2023) rescales frequencies unevenly.
+        \item \textbf{Better extrapolation}: xPos (Sun et al., 2023) adds an exponential decay to RoPE.
+        \item \textbf{Comparisons}: ALiBi (Press et al., 2022) reported better length extrapolation than rotary embeddings.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Open questions}
+        \small
+        \begin{itemize}
+          \item A theory of \emph{why} RoPE trains faster (flagged by the authors).
+          \item The best frequency base $\theta$ for a given context length.
+          \item How position schemes affect retrieval of facts from far back in a document.
+          \item For legal NLP: do judgments need longer context than the 1,024 tokens used here? How far back do case references reach?
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item Earlier position methods \emph{add} position to representations or scores.
+    \item \textbf{RoPE} \emph{rotates} each query and key pair by angle $m\theta_i$. The dot product then depends only on the offset $m-n$.
+    \item Worked example: positions (3, 5) and (13, 15) give the same score, 0.5.
+    \item Properties: relative, norm-preserving, long-term decay, linear-attention compatible, no position table.
+    \item Results: small gains in translation, faster pre-training convergence, mixed GLUE, and better accuracy on long legal case matching with 1,024 tokens (69.79\% test).
+    \item For us: the position scheme of A4.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Su, J., Lu, Y., Pan, S., Murtadha, A., Wen, B., and Liu, Y.\ (2021). RoFormer: Enhanced Transformer with Rotary Position Embedding. arXiv:2104.09864 (v5, November 2023). Published in \emph{Neurocomputing}, 2024.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Shaw et al.\ (2018); Xiao et al.\ (2019) CAIL2019-SCM; Choromanski et al.\ (2020) Performer; Press et al.\ (2022) ALiBi; Chen et al.\ (2023) Position Interpolation; Peng et al.\ (2023) YaRN; Sun et al.\ (2023) A Length-Extrapolatable Transformer (xPos).}
+\end{frame}
+
+\end{document}

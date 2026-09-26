@@ -1,0 +1,435 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[Gemma 2]{Gemma 2: Improving Open Language Models at a Practical Size}
+\subtitle{Gemma Team, Google DeepMind (2024), arXiv:2408.00118}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{Gemma Team, Google DeepMind (M.\ Riviere, S.\ Pathak, P.\ G.\ Sessa, C.\ Hardin, et al.). \emph{Gemma 2: Improving Open Language Models at a Practical Size}. Technical report, arXiv:2408.00118, 2024.}
+{Open decoder-only models (2B, 9B, 27B) that combine interleaved local/global attention, grouped-query attention and other refinements. The 2B and 9B models are trained by \textbf{knowledge distillation} instead of plain next-token prediction.}
+{Our A4 follows the same recipe at small scale: local + global layers, GQA, RoPE, RMSNorm and a gated FFN. Distillation is mandatory in our Phases 2--7.}
+{Main deck: ``A4: efficient decoder'' and ``Compression: knowledge distillation''.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Small models are under-trained}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item Recent small models improved mainly by \textbf{training on more tokens}.
+        \item But gains grow only logarithmically with data: the latest small models needed up to 15T tokens to improve by less than 1--2\%.
+        \item So small models are still under-trained, and more raw text is an expensive fix.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Question}: can we give a small model \emph{more information per training step} instead of more steps?
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{The answer: distillation}
+        \small
+        Replace the one-hot next-token target with the \textbf{full probability distribution} from a larger teacher model.
+        \vspace{1mm}
+
+        The report uses this to \emph{simulate training beyond the available data}: the 2B and 9B students see more than 50$\times$ the compute-optimal number of tokens.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: architecture}
+
+\begin{frame}{Model overview}
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}lccc@{}}
+        \toprule
+        & 2B & 9B & 27B\\
+        \midrule
+        $d_{\text{model}}$ & 2304 & 3584 & 4608\\
+        Layers & 26 & 42 & 46\\
+        Query heads / KV heads & 8 / 4 & 16 / 8 & 32 / 16\\
+        Head size & 256 & 256 & 128\\
+        FFN (GeGLU) dim & 18,432 & 28,672 & 73,728\\
+        Sliding window / global span & \multicolumn{3}{c}{4,096 / 8,192}\\
+        Vocabulary & \multicolumn{3}{c}{256,128 (tied embeddings)}\\
+        Training tokens & 2T & 8T & 13T\\
+        Trained by & distillation & distillation & from scratch\\
+        \bottomrule
+      \end{tabular}
+  \vspace{2mm}
+
+  \raggedright
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Shared with Gemma 1}
+        \small
+        Decoder-only Transformer, 8,192-token context, RoPE positions, approximated GeGLU, tied embeddings.
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Embeddings are costly here}
+        \small
+        The 256k vocabulary gives the 2B model 590M embedding parameters (2.02B non-embedding). Our 32k vocabulary costs 24.6M of 82M.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Interleaved local and global attention}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Layers alternate: \textbf{local} sliding-window attention (4,096 tokens), then \textbf{global} attention (8,192 tokens), every other layer.
+      \begin{itemize}
+        \item Local layers are cheap: cost and KV-cache grow with the window, not the full length.
+        \item Global layers keep long-range information flowing.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Ablation}: changing the 9B model's window \emph{only at inference}:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Sliding window & 4096 & 2048 & 1024\\
+        \midrule
+        Validation perplexity & 1.63 & 1.63 & 1.64\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Reading it}
+        \small
+        Shrinking the local window 4$\times$ at inference barely changes perplexity. The window can be a knob for a small speed gain.
+      \end{exampleblock}
+      \begin{block}{Our A4 at small scale}
+        \small
+        A4 uses a 256-token window in local layers and full attention in every \emph{third} layer (Gemma 2: every second). Its context is 1,024 tokens.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Logit soft-capping}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Keep logits within $(-c,\,c)$ with a smooth squash:
+      \[
+        \text{logits}\leftarrow c\cdot\tanh(\text{logits}/c)
+      \]
+      \begin{itemize}
+        \item $c=50$ for attention scores in every layer.
+        \item $c=30$ for the final output logits.
+      \end{itemize}
+      Small values pass almost unchanged; very large values are squeezed toward $\pm c$. This prevents a few extreme logits from destabilising training.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy example ($c=30$)}
+        \small
+        \begin{tabular}{@{}lc@{}}
+          \toprule
+          Raw logit & Capped\\
+          \midrule
+          5 & $30\tanh(0.167)=4.95$\\
+          10 & $30\tanh(0.333)=9.65$\\
+          30 & $30\tanh(1)=22.85$\\
+          60 & $30\tanh(2)=28.9$\\
+          300 & $\approx30.0$\\
+          \bottomrule
+        \end{tabular}
+        \vspace{1mm}
+
+        Ordinary logits barely move; a runaway logit of 300 is held at 30.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Normalisation and grouped-query attention}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Pre-norm \emph{and} post-norm with RMSNorm}
+        \small
+        RMSNorm is applied to both the \textbf{input and the output} of each sub-layer (attention and FFN), for training stability:
+        \[
+          x\leftarrow x+\text{RMSNorm}\big(f(\text{RMSNorm}(x))\big)
+        \]
+        {\scriptsize Our A4 uses only pre-norm.}
+      \end{block}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Grouped-query attention}
+        \small
+        Two query heads share each KV head (\code{num\_groups = 2}).
+        \vspace{1mm}
+
+        \textbf{Ablation (9B)}, average over 4 benchmarks:
+        \vspace{1mm}
+
+        \begin{tabular}{@{}lc@{}}
+          \toprule
+          MHA & 50.3\\
+          GQA & 50.8\\
+          \bottomrule
+        \end{tabular}
+        \vspace{1mm}
+
+        Little change in quality, with fewer parameters and faster inference.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: training by distillation}
+
+\begin{frame}{Knowledge distillation as the pre-training objective}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      For each position, the teacher gives a distribution $P_T(x\mid x_c)$ over the next token. The student minimises the cross-entropy to it:
+      \[
+        \min_{P_S}\;\sum_x -P_T(x\mid x_c)\,\log P_S(x\mid x_c)
+      \]
+      \begin{itemize}
+        \item Standard training uses a one-hot target: only the true next token counts.
+        \item Distillation gives a \emph{richer gradient}: every plausible token gets credit.
+        \item Used for the 2B and 9B models. The 27B model was trained from scratch.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy legal example}
+        \small
+        Context: ``The appeal is hereby \_\_''. True next word: ``dismissed''.
+        \vspace{1mm}
+
+        One-hot target: dismissed 1.0.\\
+        Teacher target: dismissed 0.62, rejected 0.20, allowed 0.10, disposed 0.05, \ldots
+        \vspace{1mm}
+
+        From one example the student learns four useful facts instead of one, much as in Hinton et al.\ (2015).
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Does distillation really help? Ablations}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{2B model, 500B tokens}, from scratch vs distilled from a 7B teacher:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lc@{}}
+        \toprule
+        & Average (3 benchmarks)\\
+        \midrule
+        From scratch & 60.3\\
+        Distilled & \textbf{67.7}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      \textbf{Across student sizes} (validation perplexity, 7B teacher):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        & 200M & 400M & 1B\\
+        \midrule
+        From scratch & 23 & 19 & 17\\
+        Distilled & \textbf{21} & \textbf{17} & \textbf{15}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Reading it}
+        \small
+        \begin{itemize}
+          \item A 7.4-point average gain at the same data and size.
+          \item The gain holds as the student grows from 200M to 1B.
+          \item 200M is close to our size range (50--300M), so the result is directly relevant to us.
+        \end{itemize}
+      \end{exampleblock}
+      \begin{block}{Wide vs deep (9B)}
+        \small
+        At equal parameters, a \textbf{deeper} network scored 52.0 vs 50.8 for a wider one: a small but consistent gain.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Results}
+
+\begin{frame}{Pre-trained model results}
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}lccccc@{}}
+        \toprule
+        Benchmark & Gemma-1 2B & Gemma-2 2B & Gemma-1 7B & Gemma-2 9B & Gemma-2 27B\\
+        \midrule
+        MMLU & 42.3 & 52.2 & 64.4 & 71.3 & 75.2\\
+        GSM8K & 15.1 & 24.3 & 51.8 & 68.6 & 74.0\\
+        ARC-C & 48.5 & 55.7 & 61.1 & 68.4 & 71.4\\
+        TriviaQA & 53.2 & 60.4 & 63.4 & 76.6 & 83.7\\
+        HumanEval & 22.0 & 20.1 & 32.3 & 40.2 & 51.8\\
+        \midrule
+        Average (8) & 44.0 & 50.0 & 62.4 & 70.2 & 74.4\\
+        \bottomrule
+      \end{tabular}
+  \vspace{1mm}
+
+  {\scriptsize For comparison, Mistral 7B averages 61.0 and LLaMA-3 8B 61.9 on the same 8 benchmarks.}
+  \vspace{1mm}
+
+  \raggedright
+  \begin{exampleblock}{Reading it}
+    \small
+    Gemma-2 9B beats LLaMA-3 8B by about 8 points on average. Gemma-2 2B beats Gemma-1 2B while trained on \emph{fewer} tokens (2T vs 3T); the report attributes the gain mainly to distillation, though the architecture changed too. The report claims the models compete with models 2--3$\times$ larger.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Post-training, robustness and safety}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Instruction tuning}:
+      \begin{itemize}
+        \item supervised fine-tuning on synthetic and human prompts, with responses mostly written by a larger \emph{teacher};
+        \item on-policy distillation from the teacher;
+        \item RLHF with a reward model much larger than the policy;
+        \item \textbf{model merging}: averaging models trained with different hyperparameters.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Format robustness}
+        \small
+        Standard deviation of MMLU over 12 prompt and evaluation formats:
+        \vspace{1mm}
+
+        \begin{tabular}{@{}lc@{}}
+          \toprule
+          Gemma 2 2B / 9B / 27B & 2.1 / 0.9 / 1.0\\
+          Mistral 7B & 6.9\\
+          \bottomrule
+        \end{tabular}
+      \end{block}
+      \begin{alertblock}{Responsible release}
+        \small
+        Data filtering for personal and unsafe content, evaluation-set decontamination, and safety evaluations. Users are told to run their own safety tests before deployment.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{Lessons for our capstone}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Gemma 2 finding & What it suggests for us\\
+    \midrule
+    Distillation beats from-scratch for small students & Distil A4-small from A1 in Phase 1; expect gains in the mandatory Phase 2--7 distillation too\\
+    Gain holds from 200M to 1B & Our 47--300M range is in scope\\
+    Local window can shrink at inference & Try A4 with windows of 128/256/512 at generation time\\
+    GQA $\approx$ MHA in quality & A4's 4 KV heads should cost little quality\\
+    Deeper beats wider & At fixed parameters, test more layers with a smaller $d_{\text{model}}$\\
+    Soft-capping stabilises training & A cheap addition if fp16 training on a T4 diverges\\
+    Model merging helps & Average checkpoints from different runs before submission\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Strong open models at practical sizes.
+          \item Clear ablations for distillation, GQA, depth and window size.
+          \item Shows distillation as a way to go beyond available data.
+          \item Combines several proven techniques in one design.
+          \item Open weights for the community.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item A technical report: training data and many details are not public.
+          \item Ablations use few benchmarks, often averages over 3--4.
+          \item Needs a strong, expensive teacher, and teacher inference over trillions of tokens.
+          \item Mostly English; not built for strong multilingual use.
+          \item The authors list factuality, adversarial robustness, reasoning and alignment as open problems.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Stated by the authors}
+      \begin{itemize}
+        \item Improve \textbf{factuality}.
+        \item Improve \textbf{robustness to adversarial attacks}.
+        \item Improve \textbf{reasoning}.
+        \item Improve \textbf{alignment}.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Natural follow-ups}
+      \begin{itemize}
+        \item How small can the teacher--student gap be before distillation stops paying off?
+        \item Cheaper distillation: store only the teacher's top-$k$ probabilities.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Open for legal NLP}
+        \small
+        \begin{itemize}
+          \item A law firm could distil a large in-house model into a laptop-sized one, keeping client data private: the motivation of this capstone.
+          \item Local attention suits long judgments, but party names and statutes from page 1 must reach page 40. How many global layers are enough?
+          \item Can distillation from a general teacher transfer legal knowledge, or must the teacher itself be legal?
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item Small models are under-trained, and more raw data gives only logarithmic gains.
+    \item \textbf{Gemma 2}: decoder-only, with interleaved local (4,096) and global (8,192) attention, GQA, RoPE, GeGLU, pre+post RMSNorm and logit soft-capping.
+    \item The 2B and 9B models are trained by \textbf{distillation} from a larger teacher, over 50$\times$ the compute-optimal token count.
+    \item Ablations: distillation 67.7 vs 60.3 from scratch; gains hold from 200M to 1B; GQA $\approx$ MHA; deeper beats wider; the window can shrink at inference.
+    \item Gemma-2 9B averages 70.2 vs 61.9 for LLaMA-3 8B.
+    \item For us: a large-scale version of A4's design, and strong evidence for our distillation experiments.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Gemma Team, Google DeepMind (2024). Gemma 2: Improving Open Language Models at a Practical Size. arXiv:2408.00118.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Hinton et al.\ (2015) Distillation; Beltagy et al.\ (2020) Longformer (local attention); Shazeer (2020) GLU Variants; Su et al.\ (2021) RoPE; Hoffmann et al.\ (2022) Compute-optimal training; Ainslie et al.\ (2023) GQA; Agarwal et al.\ (2024) and Gu et al.\ (2024) on-policy distillation; Ramé et al.\ (2024) model merging.}
+\end{frame}
+
+\end{document}

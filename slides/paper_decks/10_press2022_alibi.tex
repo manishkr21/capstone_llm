@@ -1,0 +1,378 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[ALiBi]{Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation}
+\subtitle{Press, Smith and Lewis (ICLR 2022), arXiv:2108.12409}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{O.\ Press, N.\ A.\ Smith, M.\ Lewis. \emph{Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation}. ICLR 2022. University of Washington, Facebook AI Research, Allen Institute for AI.}
+{Drop position embeddings entirely. Subtract a fixed, head-specific penalty proportional to query--key \textbf{distance} from each attention score. Models trained on short inputs then work on longer ones.}
+{Our A3 prefix-LM uses ALiBi and has no position embeddings. Legal judgments are long, so extrapolation matters for Phases 4--7.}
+{Main deck: ``A3: hybrid prefix-LM with ALiBi''. Glossary: ``Positional information (3)''.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem: extrapolation}
+
+\begin{frame}{Can a model read longer inputs than it was trained on?}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \textbf{Extrapolation}: performing well when the input at inference is longer than the training length $L$.
+      \vspace{1mm}
+
+      Why we want it:
+      \begin{itemize}
+        \item Attention costs $O(L^2)$, so training on long sequences is expensive.
+        \item If a model could train on $L=512$ and still read 2,048 tokens later, training would be much cheaper.
+      \end{itemize}
+      Vaswani et al.\ speculated that sinusoidal positions ``may'' extrapolate. \textbf{Nobody had checked carefully.}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Legal motivation}
+        \small
+        Our Phase-1 models train with a 1,024-token window. A typical Supreme Court judgment is many thousands of tokens.
+        For judgment prediction or case retrieval, we would like to feed more of the document at inference without retraining on long sequences.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Existing position methods, tested for extrapolation}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \small
+      Setup: WikiText-103 language model (Baevski and Auli, 2018: 16 layers, $d=1024$, 8 heads). Train with $L=512$ or $1024$; evaluate on longer inputs, changing \emph{only} the position method.
+      \vspace{1mm}
+
+      \begin{itemize}
+        \item \textbf{Learned positions}: no embedding exists beyond $L$, so extrapolation is impossible.
+        \item \textbf{Sinusoidal}: improves for up to about 20--50 extra tokens, then degrades.
+        \item \textbf{Rotary (RoPE)}: better; gains up to about 100--200 extra tokens. It was slower in their implementation.
+        \item \textbf{T5 bias}: best; gains up to about 600--800 extra tokens, but training is at least \textbf{twice as slow}.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{exampleblock}{Key finding}
+        \small
+        Extrapolation depends heavily on the \textbf{position method}.
+        \vspace{1mm}
+
+        Methods that inject position \emph{at every layer into attention}, and not into the values, extrapolate better. ALiBi builds on this observation.
+      \end{exampleblock}
+      \begin{alertblock}{No efficiency gain from T5 bias}
+        \small
+        T5 bias at $L=512$ runs at 14.4k words/s; sinusoidal at $L=1024$ runs at 28.5k. Training short with T5 bias saves nothing.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: linear biases}
+
+\begin{frame}{ALiBi: attention with linear biases}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      No position embeddings anywhere. For query $i$ attending to keys $1\ldots i$, add a fixed bias:
+      \[
+        \text{softmax}\big(q_iK^\top + m\cdot[-(i-1),\ldots,-2,-1,0]\big)
+      \]
+      \begin{itemize}
+        \item Penalty grows \textbf{linearly} with distance.
+        \item $m$ is a \textbf{head-specific slope}, fixed, not learned.
+        \item Position enters every layer, through attention scores only; values carry no position.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Implementation}: add the bias to the attention mask, a few lines of code. There is no runtime penalty; the only extra is a per-head mask ($n\times L\times L$, up to about 100 MB).
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \small
+      Bias matrix for one head, $m=1$:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}c|ccccc@{}}
+        & $k_1$ & $k_2$ & $k_3$ & $k_4$ & $k_5$\\
+        \hline
+        $q_1$ & 0 & & & &\\
+        $q_2$ & $-1$ & 0 & & &\\
+        $q_3$ & $-2$ & $-1$ & 0 & &\\
+        $q_4$ & $-3$ & $-2$ & $-1$ & 0 &\\
+        $q_5$ & $-4$ & $-3$ & $-2$ & $-1$ & 0\\
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize Multiply by the head's slope $m$ and add to $q_i\cdot k_j$. Blank cells are masked (future).}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Choosing the slopes}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      For $n$ heads, the slopes form a geometric sequence that starts at $2^{-8/n}$ with ratio $2^{-8/n}$.
+      \begin{itemize}
+        \item 8 heads: $\tfrac12,\tfrac14,\tfrac18,\ldots,\tfrac1{256}$.
+        \item 16 heads: $\tfrac{1}{2^{0.5}},\tfrac12,\tfrac{1}{2^{1.5}},\ldots,\tfrac{1}{2^8}$.
+      \end{itemize}
+      \vspace{1mm}
+      Findings from about ten slope sets tried:
+      \begin{itemize}
+        \item The best sets have slopes in $(0,1)$, denser near 0.
+        \item The method is robust to the exact choice; the same slopes worked across domains and sizes.
+        \item \textbf{Trainable slopes} extrapolated poorly and slowed training by 3\%.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Different heads, different ranges}
+        \small
+        \begin{itemize}
+          \item Slope $\tfrac12$: a key 10 tokens back loses 5 points. A \textbf{local} head, for grammar.
+          \item Slope $\tfrac{1}{256}$: 10 tokens back loses only 0.04. A \textbf{long-range} head, for topic, parties and sections.
+        \end{itemize}
+      \end{exampleblock}
+      \begin{block}{Our A3 (12 heads)}
+        \small
+        12 is not a power of two. As the ALiBi code does, we take the 8-head slopes plus every other 16-head slope: 0.707, 0.354, 0.177 and 0.088.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Easy worked example}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Query at position 5; keys at positions 1--5 with raw scores $q\cdot k=[2.0,\;1.0,\;1.5,\;0.5,\;1.0]$. Distances $[4,3,2,1,0]$.
+      \vspace{1mm}
+
+      \footnotesize
+      \begin{tabular}{@{}lccccc@{}}
+        \toprule
+        Key position & 1 & 2 & 3 & 4 & 5\\
+        \midrule
+        Raw weight (no bias) & \textbf{0.39} & 0.14 & 0.24 & 0.09 & 0.14\\
+        Bias, $m=0.5$ & $-2$ & $-1.5$ & $-1$ & $-0.5$ & 0\\
+        Biased score & 0.0 & $-0.5$ & 0.5 & 0.0 & 1.0\\
+        ALiBi weight & 0.14 & 0.09 & 0.24 & 0.14 & \textbf{0.39}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{What happened}
+        \small
+        With slope 0.5, the farthest key drops from 0.39 to 0.14, and the nearest key rises from 0.14 to 0.39.
+        A strongly matching distant key can still win, but it must match \emph{much} better.
+        \vspace{1mm}
+
+        With slope $1/256$ the weights barely change: that head still looks far back.
+      \end{exampleblock}
+      \begin{block}{Why it extrapolates}
+        \small
+        A distance of 1,500 needs no new parameters: the penalty is just $1500\,m$. Very distant keys are simply faded out.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Results}
+
+\begin{frame}{WikiText-103: better, even without extrapolating}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item For every training length $L$, ALiBi beats sinusoidal \emph{at the same length}. For example, at $L=3072$: \textbf{17.60} vs 18.67 perplexity.
+        \item ALiBi trained on $L=512$ scores 19.73 at 512 tokens, and \textbf{18.40} when evaluated on 3,072 tokens. That beats the sinusoidal model \emph{trained} on 3,072.
+        \item That $L=512$ model trains \textbf{1.84$\times$ faster} and fits on a smaller GPU.
+        \item At $L=1024$ and $3072$, ALiBi also beats rotary and T5 bias without extrapolation.
+        \item The $L=512$ model keeps improving up to inputs of over 12k tokens.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Books domain}
+        \small
+        The same slopes, unchanged, were used on the Toronto Book Corpus. Results transferred fully: better than sinusoidal both with and without extrapolation.
+      \end{exampleblock}
+      \begin{block}{Recency bias}
+        \small
+        ALiBi prefers nearby tokens. For language modelling on small data this inductive bias helps even at equal length.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Scaling up: 1.3B parameters on 461 GB}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Model: 25 layers, 16 heads, $d=2048$, FFN 8192: \textbf{1.3B parameters}. Data: RoBERTa corpus + English CC-100 (461 GB). One epoch = 50k updates on 128 V100 GPUs.
+      \vspace{1mm}
+
+      \begin{itemize}
+        \item ALiBi trained on $L=1024$ \textbf{beats} sinusoidal trained on $L=2048$ at 2,048 tokens by 0.09 perplexity, using 3.1 GB less memory.
+        \item It reaches a given perplexity about \textbf{11\% faster}.
+        \item ALiBi $L=512$ vs sinusoidal $L=1024$ at 1,024 tokens: only 0.06 behind, 7\% faster, 1.6 GB less memory.
+        \item At equal $L$, ALiBi and sinusoidal are \emph{similar} at this scale.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{The ``2$L$'' sweet spot}
+        \small
+        On this corpus, the best perplexity comes at about \textbf{twice} the training length:
+        \begin{itemize}
+          \item $L=512$: 9.79 at 512, best 9.3 at 1,012 tokens.
+          \item $L=1024$: 9.16 at 1,024, best 8.9 at 2,024 tokens.
+        \end{itemize}
+        Performance stays strong up to 10,000 tokens. Sinusoidal degrades as soon as one token is added beyond $L$.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Why does longer input help? The early-token curse}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Evaluation usually splits text into non-overlapping chunks of length $L_{\text{valid}}$. Tokens at the \emph{start} of each chunk have little context, so they get worse predictions: the \textbf{early-token curse}.
+      \vspace{1mm}
+
+      Two possible reasons ALiBi improves with longer inputs:
+      \begin{enumerate}
+        \item it really uses context more than $L$ tokens back; or
+        \item longer chunks mean fewer tokens suffer the early-token curse.
+      \end{enumerate}
+      Using sliding-window evaluation, the authors find that ALiBi's gain is \textbf{largely explained by reason 2}.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{alertblock}{An honest caveat}
+        \small
+        ALiBi lets a model \emph{accept} long inputs gracefully. It does not prove the model \emph{uses} information from thousands of tokens back.
+        The authors suggest future work should exploit longer histories more efficiently.
+      \end{alertblock}
+      \begin{exampleblock}{For our evaluation}
+        \small
+        Our continuation loss always gives the model 768 tokens of context, so it avoids the early-token curse by design.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{ALiBi in our capstone}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item A3 uses ALiBi with 12 heads and no position embeddings.
+        \item \textbf{Our extension}: the paper uses causal attention only. A3 also has a \emph{bidirectional} prefix, so we use the symmetric penalty $-m\,|i-j|$ inside the prompt.
+        \item The bias is built as a float mask together with the prefix mask. Our tests check it against cached generation.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Experiments worth running}
+        \small
+        \begin{itemize}
+          \item Evaluate A1 (learned), A3 (ALiBi) and A4 (RoPE) at 1,024, 1,536 and 2,048 tokens. A1 cannot go beyond 1,024 at all.
+          \item Train A3 at $L=512$ and test at 1,024: can it match a 1,024-trained model, as in the paper?
+          \item For long judgments in Phases 4--7, compare ALiBi extrapolation against chunking.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Extremely simple; no parameters; no runtime cost.
+          \item Real extrapolation: train short, test long.
+          \item Saves training time and memory at a given test length.
+          \item Better perplexity than sinusoidal on smaller data.
+          \item Slopes transfer across domains and model sizes.
+          \item Careful, controlled comparison of four position methods.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item Best results come at about 2$L$; much longer inputs help less.
+          \item Gains largely come from avoiding the early-token curse, not from long-range use.
+          \item The recency bias may hurt tasks that need precise distant retrieval.
+          \item Designed and tested for causal language modelling only.
+          \item At billion-parameter scale, no gain at equal length.
+          \item Slopes are hand-chosen.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{From the paper}
+      \begin{itemize}
+        \item Exploit longer histories more efficiently, beyond reducing the early-token curse.
+        \item Combine ALiBi with orthogonal methods such as kNN-LM or Routing Transformer.
+        \item Use the saved memory to stack more layers.
+      \end{itemize}
+      \textbf{What followed}
+      \begin{itemize}
+        \item Adopted in large open models such as BLOOM (BigScience, 2022) and MPT.
+        \item Length-extrapolation research: RoPE scaling methods (Position Interpolation, YaRN), xPos, and studies of positional schemes such as NoPE (Kazemnejad et al., 2023).
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Open questions}
+        \small
+        \begin{itemize}
+          \item Can a model \emph{use} information thousands of tokens back, not just tolerate it?
+          \item Should slopes adapt to the task or the domain?
+          \item How does recency bias interact with retrieval of a single far-away fact (``needle in a haystack'')?
+          \item For legal text: parties and statutes named on page 1 matter on page 40. Is a linear recency penalty the right prior for judgments?
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item Sinusoidal positions do not extrapolate; rotary helps a little; T5 bias helps more but is slow.
+    \item \textbf{ALiBi}: no position embeddings; add $-m\cdot$distance to each attention score, with fixed geometric slopes per head.
+    \item Worked example: slope 0.5 moves attention from the farthest key (0.39) to the nearest (0.39).
+    \item Results: better perplexity at equal length on WikiText-103; a model trained on 512 tokens beats a sinusoidal model trained on 3,072; at 1.3B, train on 1,024 and match or beat 2,048, 11\% faster.
+    \item Best around 2$L$; gains mostly from reducing the early-token curse.
+    \item For us: the position scheme of A3, extended to a bidirectional prefix.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Press, O., Smith, N.\ A., and Lewis, M.\ (2022). Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation. In \emph{International Conference on Learning Representations (ICLR)}. arXiv:2108.12409.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Vaswani et al.\ (2017); Raffel et al.\ (2020) T5; Su et al.\ (2021) RoFormer; Press et al.\ (2021) Shortformer; BigScience (2022) BLOOM; Chen et al.\ (2023) Position Interpolation; Peng et al.\ (2023) YaRN; Sun et al.\ (2023) xPos; Kazemnejad et al.\ (2023) The Impact of Positional Encoding on Length Generalization in Transformers.}
+\end{frame}
+
+\end{document}

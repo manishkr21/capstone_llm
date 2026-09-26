@@ -1,0 +1,414 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+% 6x6 attention-mask grid: #1 caption, #2 condition on \i (query row) and \j (key column)
+\newcommand{\mgrid}[2]{%
+  \begin{tikzpicture}[scale=0.26]
+    \foreach \i in {0,...,5}{\foreach \j in {0,...,5}{
+      \pgfmathtruncatemacro{\ok}{#2}
+      \ifnum\ok=1 \fill[accent] (\j,-\i) rectangle ++(0.9,-0.9);
+      \else \fill[black!8] (\j,-\i) rectangle ++(0.9,-0.9); \fi }}
+    \node[font=\scriptsize,anchor=north,align=center] at (3,-6.2) {#1};
+  \end{tikzpicture}}
+\title[UniLM]{Unified Language Model Pre-training for Natural Language Understanding and Generation}
+\subtitle{Dong et al.\ (NeurIPS 2019), arXiv:1905.03197}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{L.\ Dong, N.\ Yang, W.\ Wang, F.\ Wei, X.\ Liu, Y.\ Wang, J.\ Gao, M.\ Zhou, H.-W.\ Hon. \emph{Unified Language Model Pre-training for Natural Language Understanding and Generation}. NeurIPS 2019. Microsoft Research.}
+{One shared Transformer is pre-trained as a bidirectional, a unidirectional \emph{and} a sequence-to-sequence language model, simply by switching the \textbf{self-attention mask}.}
+{Our A3 prefix-LM uses UniLM's sequence-to-sequence mask: bidirectional over the prompt, causal over the continuation, in one stack.}
+{Main deck: ``A3: hybrid prefix-LM with ALiBi'' and ``Attention masks''.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Understanding models vs generation models}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        Objective & ELMo & GPT & BERT & UniLM\\
+        \midrule
+        Left-to-right LM & \checkmark & \checkmark & & \checkmark\\
+        Right-to-left LM & \checkmark & & & \checkmark\\
+        Bidirectional LM & & & \checkmark & \checkmark\\
+        Seq-to-seq LM & & & & \checkmark\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      \begin{itemize}
+        \item \textbf{BERT} (bidirectional) is excellent for understanding tasks (NLU), but its bidirectionality makes generation (NLG) hard.
+        \item \textbf{GPT} (left-to-right) generates naturally but sees only left context when reading.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{The question}
+        \small
+        Can \emph{one} pre-trained network do both jobs: read a legal document with full context, \emph{and} write a summary of it?
+      \end{exampleblock}
+      \begin{block}{Claimed advantages of unifying}
+        \small
+        \begin{enumerate}
+          \item One model to train and host, not several.
+          \item Shared parameters learn more general representations and overfit less to any one objective.
+          \item The seq-to-seq mode suits summarisation.
+        \end{enumerate}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: one network, many masks}
+
+\begin{frame}{The mask decides what context a token sees}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \small
+      Standard Transformer self-attention, plus a mask matrix $M$:
+      \[
+        A=\text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}+M\right)V
+      \]
+      \[
+        M_{ij}=\begin{cases}0 & \text{token $i$ may attend to $j$}\\ -\infty & \text{blocked}\end{cases}
+      \]
+      Same weights, same architecture. Only $M$ changes between objectives.
+      \vspace{1mm}
+
+      Segment embeddings tell the model which objective it is being trained on.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+      \mgrid{bidirectional\\(like BERT)}{1}\hspace{2mm}
+      \mgrid{left-to-right\\(like GPT)}{\j<=\i ? 1 : 0}\\[1mm]
+      \mgrid{right-to-left}{\j>=\i ? 1 : 0}\hspace{2mm}
+      \mgrid{seq-to-seq\\(source = 3 tokens)}{(\j<3 || (\i>=3 && \j<=\i)) ? 1 : 0}
+      \vspace{1mm}
+
+      {\scriptsize Rows = queries, columns = keys; blue = allowed.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The sequence-to-sequence mask, step by step}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Input: \code{[SOS] S1 [EOS] S2 [EOS]}, with source S1 and target S2.
+      \begin{itemize}
+        \item \textbf{Source tokens} see all source tokens, in both directions, but no target tokens.
+        \item \textbf{Target tokens} see all source tokens, plus target tokens to their left.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Paper's example}: source $t_1t_2$, target $t_3t_4t_5$:
+      \code{[SOS] t1 t2 [EOS] t3 t4 t5 [EOS]}.
+      Both $t_1$ and $t_2$ see the first four tokens. $t_4$ sees the first six.
+      \vspace{1mm}
+
+      The encoder and decoder are the \emph{same} Transformer. There is no cross-attention.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy legal example}
+        \small
+        Source: ``\emph{appeal against conviction under Section 302; evidence found unreliable}''.\\
+        Target: ``\emph{appeal allowed}''.
+        \vspace{1mm}
+
+        \begin{itemize}
+          \item ``unreliable'' can look \emph{forward} to ``evidence'' and ``found'' while reading, which is impossible in GPT.
+          \item ``allowed'' can look at the whole source and at ``appeal'' in the target, but not at later target words.
+        \end{itemize}
+        Reading is bidirectional; writing is causal.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Pre-training objectives: all cloze tasks}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Every objective is a \textbf{cloze} task: replace random word pieces with \code{[MASK]} and predict the originals. Only the mask decides which context is visible.
+      \vspace{1mm}
+
+      \textbf{Mixing within each batch}:
+      \begin{itemize}
+        \item 1/3 bidirectional LM (plus next-sentence prediction, as in BERT);
+        \item 1/3 sequence-to-sequence LM;
+        \item 1/6 left-to-right LM and 1/6 right-to-left LM.
+      \end{itemize}
+      \textbf{Masking}: 15\% of tokens; of these 80\% become \code{[MASK]}, 10\% a random token, 10\% unchanged. 80\% of the time one token is masked, 20\% of the time a bigram or trigram.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy example: left-to-right cloze}
+        \small
+        ``$x_1\ x_2$ \code{[MASK]} $x_4$'': with the left-to-right mask, the prediction for \code{[MASK]} can use only $x_1$, $x_2$ and itself.
+        \vspace{1mm}
+
+        With the bidirectional mask, the same slot can also use $x_4$.
+      \end{exampleblock}
+      \begin{alertblock}{Difference from our A3}
+        \small
+        UniLM predicts \emph{masked} tokens. Our A3 predicts every \emph{next} token after the prefix, with no \code{[MASK]} tokens. The attention mask is the same idea.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Model and training setup}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item Architecture of BERT-large: 24 layers, hidden size 1,024, 16 heads, about \textbf{340M parameters}; GELU; tied output embeddings.
+        \item \textbf{Initialised from BERT-large}, then pre-trained on English Wikipedia and BookCorpus.
+        \item WordPiece vocabulary of 28,996; maximum length 512.
+        \item Adam, learning rate $3\times10^{-5}$, 40k warm-up steps, linear decay; dropout 0.1; weight decay 0.01; batch 330.
+        \item About 770,000 steps. Roughly 7 hours per 10,000 steps on 8 V100 GPUs with mixed precision.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Fine-tuning}
+        \small
+        \begin{itemize}
+          \item \textbf{NLU} (e.g.\ classification): use the bidirectional mask; classify from the \code{[SOS]} vector, like BERT's \code{[CLS]}.
+          \item \textbf{NLG} (e.g.\ summarisation): pack \code{[SOS] document [EOS] summary [EOS]}, use the seq-to-seq mask, and mask target tokens to recover.
+          \item Masking the final \code{[EOS]} teaches the model when to \emph{stop}.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Results}
+
+\begin{frame}{Abstractive summarisation}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \footnotesize
+      \textbf{CNN/DailyMail} (ROUGE F1):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Model & R-1 & R-2 & R-L\\
+        \midrule
+        LEAD-3 (first 3 sentences) & 40.42 & 17.62 & 36.67\\
+        Best extractive & 43.25 & 20.24 & 39.63\\
+        PGNet & 39.53 & 17.28 & 37.98\\
+        Bottom-Up & 41.22 & 18.68 & 38.34\\
+        \textbf{UniLM} & \textbf{43.33} & 20.21 & \textbf{40.51}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \footnotesize
+      \textbf{Gigaword} (ROUGE F1):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Model & R-1 & R-2 & R-L\\
+        \midrule
+        \multicolumn{4}{@{}l}{\emph{only 10K training examples}}\\
+        Transformer & 10.97 & 2.23 & 10.42\\
+        MASS & 25.03 & 9.48 & 23.48\\
+        UniLM & \textbf{32.96} & \textbf{14.68} & \textbf{30.56}\\
+        \multicolumn{4}{@{}l}{\emph{full 3.8M examples}}\\
+        MASS & 37.66 & 18.53 & 34.89\\
+        UniLM & \textbf{38.45} & \textbf{19.45} & \textbf{35.75}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+  \end{columns}
+  \vspace{2mm}
+  \small
+  New state of the art for abstractive summarisation. With only 10K examples UniLM beats MASS by 7.08 ROUGE-L, a strong \textbf{low-resource} result. Inputs were truncated to 640 tokens (CNN/DM); beam 5 with duplicate-trigram blocking.
+\end{frame}
+
+\begin{frame}{Question answering and question generation}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}llc@{}}
+        \toprule
+        Task & Model & Score\\
+        \midrule
+        SQuAD 2.0 (extractive, F1) & BERT-large & 81.8\\
+        & UniLM & \textbf{83.4}\\
+        CoQA (extractive, F1) & BERT-large & 82.7\\
+        & UniLM & \textbf{84.9}\\
+        CoQA (\emph{generative}, F1) & PGNet & 45.4\\
+        & UniLM & \textbf{82.5}\\
+        SQuAD question gen.\ (BLEU-4) & SemQG & 18.37\\
+        & UniLM & \textbf{22.12}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Highlights}
+        \small
+        \begin{itemize}
+          \item Generative QA jumps by \textbf{37.1 F1}, nearly closing the gap to extractive QA.
+          \item Using UniLM to \emph{generate} 5M answerable and 4M unanswerable training questions raised SQuAD 2.0 F1 from 83.4 to \textbf{87.6}.
+          \item Dialogue response generation (DSTC7): NIST-4 of 2.67, above the reported human score of 2.65.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Language understanding (GLUE)}
+  \begin{columns}[T]
+    \begin{column}{0.58\textwidth}
+      \footnotesize
+      GLUE test set:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccccc@{}}
+        \toprule
+        Model & CoLA & SST-2 & MNLI-m & RTE & Score\\
+        \midrule
+        GPT & 45.4 & 91.3 & 82.1 & 56.0 & 72.8\\
+        BERT-large & 60.5 & 94.9 & 86.7 & 70.1 & 80.5\\
+        \textbf{UniLM} & \textbf{61.1} & 94.5 & \textbf{87.0} & \textbf{70.9} & \textbf{80.8}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.38\textwidth}
+      \begin{exampleblock}{Reading it}
+        \small
+        UniLM matches BERT-large on understanding (80.8 vs 80.5), while \emph{also} being a strong generator.
+        Adding unidirectional and seq-to-seq objectives did \textbf{not} hurt understanding.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{Connection to our A3 prefix-LM}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lXX@{}}
+    \toprule
+    & UniLM & Our A3\\
+    \midrule
+    Stack & one shared Transformer & one shared Transformer\\
+    Key mask & sequence-to-sequence (source bidirectional) & prefix: prompt bidirectional, continuation causal\\
+    Objective & cloze: predict \code{[MASK]} tokens & next-token prediction after the prefix\\
+    Mixing & 1/3 bi, 1/3 seq2seq, 1/3 uni & 50\% plain causal, 50\% random prefix\\
+    Positions & learned (from BERT) & ALiBi, no position embeddings\\
+    Start point & initialised from BERT-large & trained from scratch (rules)\\
+    Size & about 340M & 81.3M\\
+    \bottomrule
+  \end{tabularx}
+  \vspace{2mm}
+  \begin{exampleblock}{What UniLM suggests we test}
+    \small
+    Does bidirectional reading of the 512-word prompt help A3 beat the causal A1 on continuation loss and BERTScore? Is 50\% causal mixing the right ratio?
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item One model for understanding \emph{and} generation.
+          \item Very simple mechanism: only the attention mask changes.
+          \item Strong generation results, especially with little data.
+          \item No loss on understanding benchmarks compared with BERT.
+          \item Parameter sharing between ``encoder'' and ``decoder'' halves the size of an equivalent encoder--decoder.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item Initialised from BERT-large, so gains are not purely from the unified objective.
+          \item No ablation isolating each objective's contribution; the authors list this as future work.
+          \item Cloze objectives train on only about 15\% of tokens per pass, which is less efficient than predicting every next token.
+          \item Maximum length 512 limits long-document tasks.
+          \item Encoder and decoder must share one set of weights and one sequence budget.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions (1): from the paper and after}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Direction & Details\\
+    \midrule
+    Scale up \emph{(paper)} & More epochs, larger models, web-scale corpora\\
+    Ablations \emph{(paper)} & Measure the benefit of pre-training several LM tasks in one network\\
+    Cross-lingual UniLM \emph{(paper)} & Extend beyond monolingual tasks\\
+    Multi-task fine-tuning \emph{(paper)} & Fine-tune on NLU and NLG tasks together, as in MT-DNN\\
+    Better unified objectives & UniLMv2 (Bao et al., 2020) uses pseudo-masked LM to train both modes efficiently\\
+    Blank infilling & GLM (Du et al., 2022) generates masked spans autoregressively with 2D positions\\
+    Mixture of denoisers & UL2 (Tay et al., 2023) mixes prefix-LM and span-corruption objectives\\
+    Systematic comparison & T5 (Raffel et al., 2020) compares prefix-LM, decoder-only and encoder--decoder models directly\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Future research directions (2): open questions}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Open in general}
+        \small
+        \begin{itemize}
+          \item What mixture of objectives is best for a fixed compute budget?
+          \item Do unified models scale as well as pure decoder-only models?
+          \item How to reuse a bidirectionally-read prompt in efficient KV-cached generation.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Open for legal NLP}
+        \small
+        \begin{itemize}
+          \item One in-house model that both classifies (Phases 3--5) and writes (Phases 1, 6), which suits a law firm's hosting limits.
+          \item Using a unified model to generate training questions for Phase 8 (QA), as UniLM did for SQuAD.
+          \item Long judgments: combining the prefix mask with local attention.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item BERT reads well; GPT writes well. UniLM does both with \textbf{one shared Transformer}.
+    \item The \textbf{self-attention mask} selects the mode: bidirectional, left-to-right, right-to-left, or sequence-to-sequence (source bidirectional, target causal).
+    \item All modes are trained as cloze tasks, mixed in every batch.
+    \item Results: new state of the art on five generation tasks (e.g.\ CNN/DM ROUGE-L 40.51, CoQA generative F1 82.5) while matching BERT on GLUE (80.8).
+    \item For us: the idea behind the A3 prefix-LM mask.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Dong, L., Yang, N., Wang, W., Wei, F., Liu, X., Wang, Y., Gao, J., Zhou, M., and Hon, H.-W.\ (2019). Unified Language Model Pre-training for Natural Language Understanding and Generation. In \emph{Advances in Neural Information Processing Systems 32}. arXiv:1905.03197.
+  \vspace{3mm}
+
+  {\footnotesize Later work cited: Bao et al.\ (2020) UniLMv2; Raffel et al.\ (2020) T5; Du et al.\ (2022) GLM; Tay et al.\ (2023) UL2.}
+\end{frame}
+
+\end{document}

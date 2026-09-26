@@ -1,0 +1,498 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[Knowledge Distillation]{Distilling the Knowledge in a Neural Network}
+\subtitle{Hinton, Vinyals and Dean (2015), arXiv:1503.02531}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{G.\ Hinton, O.\ Vinyals, J.\ Dean. \emph{Distilling the Knowledge in a Neural Network}. NIPS Deep Learning Workshop, 2014 (arXiv, March 2015). Google.}
+{Train a small ``student'' model to match the \emph{softened} output probabilities of a large ``teacher'', so the student inherits how the teacher generalises.}
+{A knowledge-distillation experiment is \textbf{mandatory} in Phases 2--7. Our Phase-1 code already implements the loss from this paper.}
+{Main deck: ``Compression: knowledge distillation''. Glossary: ``Knowledge distillation'' section.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Training and deployment want different models}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Training} can be slow and use huge compute. Its job is to extract structure from large, redundant data.
+        \item \textbf{Deployment} must be fast and cheap for many users.
+        \item The best accuracy often comes from \emph{cumbersome} models: an ensemble of many nets, or one very large net with strong regularisation such as dropout.
+        \item These are too expensive to serve.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Question:} can a small model keep the cumbersome model's accuracy?
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{The paper's analogy}
+        \small
+        Many insects have a \textbf{larva} built to feed and grow, and an \textbf{adult} built to travel and reproduce.
+        Likewise: train a big ``larval'' model to learn, then transform the knowledge into a small ``adult'' model for deployment.
+      \end{exampleblock}
+      \begin{block}{Prior work}
+        \small
+        Bucilu\v{a}, Caruana et al.\ (2006) showed that an ensemble's knowledge can be compressed into a single model. This paper generalises their method.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{What is ``knowledge''?}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Usual view}: knowledge = the learned parameter values. Then it is hard to see how a \emph{different} model could hold the same knowledge.
+      \vspace{2mm}
+
+      \textbf{Paper's view}: knowledge = the learned \emph{mapping from inputs to outputs}.
+      Any model that reproduces the mapping has the knowledge.
+      \vspace{2mm}
+
+      A trained classifier assigns small probabilities to all the \emph{wrong} classes, and \textbf{some are much larger than others}. These ratios show how the model generalises.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{The paper's example}
+        \small
+        A photo of a BMW:
+        \begin{itemize}
+          \item P(BMW) is high.
+          \item P(garbage truck) is tiny, but\ldots
+          \item P(carrot) is \emph{much} tinier still.
+        \end{itemize}
+        ``A BMW looks more like a truck than a carrot'' is real knowledge. The one-hot label (BMW = 1, others = 0) throws it away.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea}
+
+\begin{frame}{Soft targets}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Hard target}: the one-hot true label.
+        \item \textbf{Soft target}: the teacher's full probability distribution over classes.
+        \item Train the student to match the soft targets on a \textbf{transfer set}. This can be the original training set, or even unlabelled data.
+      \end{itemize}
+      \vspace{1mm}
+      Why soft targets help:
+      \begin{itemize}
+        \item High-entropy soft targets carry \textbf{more information per example}.
+        \item Their gradients have \textbf{less variance} between examples.
+        \item So the student can learn from \emph{less data}, with a \emph{higher learning rate}.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \begin{tikzpicture}
+        \node[box] (x) at (0,0) {input $x$ (transfer set)};
+        \node[hot,minimum width=22mm] (t) at (-1.55,1.35) {Teacher\\\scriptsize large, frozen};
+        \node[hot,minimum width=22mm,fill=aqua!15] (s) at (1.55,1.35) {Student\\\scriptsize small, trained};
+        \node[box] (pt) at (-1.55,2.75) {soft targets $p$\\\scriptsize softmax$(v/T)$};
+        \node[box] (ps) at (1.55,2.75) {predictions $q$\\\scriptsize softmax$(z/T)$};
+        \node[box,fill=warm!15] (L) at (0,4.05) {loss: match $q$ to $p$};
+        \draw[arr] (x)--(t); \draw[arr] (x)--(s); \draw[arr] (t)--(pt); \draw[arr] (s)--(ps);
+        \draw[arr] (pt)--(L); \draw[arr] (ps)--(L);
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The problem with confident teachers, and the fix: temperature}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      On easy data the teacher is almost always right and very confident. The useful information hides in \emph{ratios of tiny probabilities}.
+      \vspace{1mm}
+
+      \textbf{Paper's MNIST example}: one ``2'' gets $10^{-6}$ for ``3'' and $10^{-9}$ for ``7''; another ``2'' is the other way round. This is rich similarity structure, but it barely affects cross-entropy because the numbers are near 0.
+      \vspace{1mm}
+
+      \textbf{Fix}: raise the softmax \textbf{temperature} $T$:
+      \[
+        q_i=\frac{\exp(z_i/T)}{\sum_j\exp(z_j/T)}
+      \]
+      Higher $T$ gives a softer distribution. Use the same high $T$ for teacher and student during training, then $T=1$ at deployment.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy example: legal next word}
+        \small
+        Teacher logits after ``The appeal is hereby'':\\
+        dismissed $6$, rejected $4$, allowed $1$.
+        \vspace{1mm}
+
+        \begin{tabular}{@{}lccc@{}}
+          & dism. & rej. & allowed\\
+          \midrule
+          $T=1$ & 0.876 & 0.118 & 0.006\\
+          $T=4$ & 0.528 & 0.320 & 0.151\\
+        \end{tabular}
+        \vspace{1mm}
+
+        At $T=1$ the student mostly learns ``dismissed''. At $T=4$ it also learns that ``rejected'' is a close substitute and ``allowed'' is not far off. That is the dark knowledge.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The distillation objective}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      When true labels are available, use a \textbf{weighted average of two losses}:
+      \[
+        \mathcal{L}= \underbrace{T^2\cdot \text{CE}\big(p^{(T)},\,q^{(T)}\big)}_{\text{match teacher at temperature }T}
+        \;+\;\lambda\,\underbrace{\text{CE}\big(y,\,q^{(1)}\big)}_{\text{true label at }T=1}
+      \]
+      \begin{itemize}
+        \item Both terms use the \emph{same} student logits.
+        \item The paper found best results with a \textbf{considerably lower weight} on the hard-label term.
+        \item \textbf{Why $T^2$}: soft-target gradients shrink as $1/T^2$. Multiplying by $T^2$ keeps the balance of the two terms fixed when you change $T$.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{Our capstone implementation}
+        \small
+        \code{legal\_lm/trainer.py} uses the equivalent KL form:
+        \[
+          \alpha\,\mathcal{L}_{\text{CE}}+(1-\alpha)\,T^2\,\mathrm{KL}\big(p^{(T)}\,\|\,q^{(T)}\big)
+        \]
+        with $\alpha=0.5$ and $T=2$ by default. KL and cross-entropy differ only by the teacher's entropy, a constant for the student.
+      \end{block}
+      \begin{exampleblock}{Intuition}
+        \small
+        ``Err toward the correct answer'': the student usually cannot match the teacher exactly, and a little pull toward the true label helps.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Matching logits is a special case}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \small
+      Gradient of the soft-target loss for student logit $z_i$ (teacher logits $v_i$):
+      \[
+        \frac{\partial C}{\partial z_i}=\frac1T\,(q_i-p_i)
+      \]
+      For high $T$, $e^{x/T}\approx1+x/T$. If the logits are zero-mean per example:
+      \[
+        \frac{\partial C}{\partial z_i}\approx\frac{1}{NT^2}\,(z_i-v_i)
+      \]
+      So at \textbf{high temperature}, distillation = minimising $\tfrac12(z_i-v_i)^2$, which is exactly Caruana's logit matching.
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{block}{What temperature does}
+        \small
+        \begin{itemize}
+          \item \textbf{High $T$}: match all logits, including very negative ones.
+          \item \textbf{Lower $T$}: pay little attention to very negative logits. These are almost unconstrained by the teacher's training, so they may be noise, or may carry useful knowledge.
+        \end{itemize}
+        Which effect wins is empirical. For \emph{very small} students, intermediate temperatures worked best.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Experiments}
+
+\begin{frame}{MNIST: distillation transfers generalisation}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}lr@{}}
+        \toprule
+        Model & Test errors\\
+        \midrule
+        Teacher: 2$\times$1200 units, dropout, jitter & 67\\
+        Student: 2$\times$800 units, no regularisation & 146\\
+        Same student + soft targets at $T=20$ & \textbf{74}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      The student learned the teacher's robustness to shifted images, even though the transfer set contained \emph{no} shifted images.
+      \vspace{1mm}
+
+      Temperature: with 300 or more units per layer, all $T>8$ worked similarly. With only 30 units, $T$ between 2.5 and 4 was clearly best.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{The ``mythical digit'' experiment}
+        \small
+        Remove every ``3'' from the transfer set. The student never sees a 3.
+        \begin{itemize}
+          \item Result: 206 errors, 133 of them on the 1,010 test 3s.
+          \item Most errors come from a too-low bias for class 3. Raising that bias by 3.5 gives 109 errors, only 14 on 3s.
+          \item So the student gets \textbf{98.6\% of 3s right} without ever seeing one.
+        \end{itemize}
+        The soft targets for other digits (``this 8 looks a bit like a 3'') taught it what a 3 is.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Speech recognition: an ensemble in one model}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      Android voice-search acoustic model: 8 hidden layers of 2,560 ReLUs, 14,000 output states, about 85M parameters. Trained on about 2,000 hours of speech (700M examples).
+      \vspace{2mm}
+
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        System & Frame acc. & WER\\
+        \midrule
+        Baseline & 58.9\% & 10.9\%\\
+        10$\times$ ensemble & 61.1\% & 10.7\%\\
+        Distilled single model & \textbf{60.8\%} & \textbf{10.7\%}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize Temperatures tried: 1, 2, 5, 10; weight 0.5 on the hard-label loss.}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Reading the result}
+        \small
+        The ensemble improves frame accuracy by 2.2 points.
+        The distilled model keeps 1.9 of them, \textbf{more than 80\%}, at one-tenth of the inference cost.
+        The word-error-rate gain is fully kept.
+      \end{exampleblock}
+      \begin{block}{Compare}
+        \small
+        An earlier method distilled at $T=1$ and closed only 28\% of the gap between the small and large models.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Soft targets as a regulariser}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Train the 85M speech model on only \textbf{3\% of the data} (about 20M examples):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        System & Train acc. & Test acc.\\
+        \midrule
+        Baseline, 100\% data & 63.4\% & 58.9\%\\
+        Baseline, 3\% data & 67.3\% & 44.5\%\\
+        Soft targets, 3\% data & 65.4\% & \textbf{57.0\%}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      With hard labels, 3\% of the data overfits badly and needed early stopping. With soft targets, the model simply converged to 57.0\%, within 2 points of using all the data.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Why this matters for small data}
+        \small
+        A soft target such as ``60\% dismissed, 30\% rejected'' says much more than the label ``dismissed''. Each example teaches more, so fewer examples are needed.
+        \vspace{1mm}
+
+        Our Phase-2 NER data has only two annotated folds, a small-data setting where this effect should help.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Specialist models for very large datasets}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \textbf{Setting}: Google's JFT, with 100M images and 15,000 classes. The baseline network took about six months to train, so a full ensemble was impossible.
+      \vspace{1mm}
+
+      \textbf{Idea}: one \emph{generalist} plus many \emph{specialists}. Each specialist:
+      \begin{itemize}
+        \item focuses on a cluster of \textbf{easily confused} classes, found by K-means on the covariance of the generalist's predictions;
+        \item starts from the generalist's weights, and trains on half special-class and half random data;
+        \item lumps all other classes into one ``dustbin'' class.
+      \end{itemize}
+      At test time only specialists relevant to the generalist's top guess run; outputs are combined by minimising a sum of KL divergences.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Example clusters from the paper}
+        \scriptsize
+        \begin{itemize}
+          \item Tea party; Easter; Bridal shower; Baby shower\ldots
+          \item Bridge; Cable-stayed bridge; Suspension bridge; Viaduct\ldots
+          \item Toyota Corolla E100; Opel Signum; Opel Astra\ldots
+        \end{itemize}
+      \end{exampleblock}
+      \begin{block}{Results}
+        \small
+        61 specialists with 300 classes each. Test accuracy rose from 25.0\% to 26.1\%, a 4.4\% relative gain. Gains grew with the number of specialists covering a class, up to about 16\%. Specialists trained in days, not weeks, fully in parallel.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Specialists vs mixtures of experts}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Mixture of experts (Jacobs et al., 1991)}
+        \small
+        A gating network learns which expert handles each example, while the experts learn.
+        \begin{itemize}
+          \item Assignments use each expert's actual performance, which is good.
+          \item But every expert's data depends on all the others, and the gate must compare experts on the same example.
+          \item So training is \textbf{hard to parallelise}.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Specialists (this paper)}
+        \small
+        \begin{itemize}
+          \item Train a generalist first, then fix the class subsets once from its confusions.
+          \item Each specialist trains \textbf{fully independently}.
+          \item At test time the generalist decides which specialists to run.
+        \end{itemize}
+        Suggested next step: give specialists a full softmax and train them with the generalist's soft targets for the non-special classes, so they do not forget or overfit.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{Using distillation in our capstone}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Phase 1 (optional compression)}: \code{configs/distill\_efficient\_small.yaml} trains a 47M A4 student from an A1 teacher, with $\alpha=0.5$ and $T=2$.
+      \vspace{2mm}
+
+      \textbf{Phases 2--7 (mandatory)}: teacher = a fine-tuned larger model; student = a smaller model. Examples:
+      \begin{itemize}
+        \item \textbf{NER}: per-token label distributions.
+        \item \textbf{RR / CJPE / LSI}: class or multi-label probabilities.
+        \item \textbf{PCR}: teacher similarity scores.
+        \item \textbf{Summarisation}: per-token soft targets, or teacher-generated summaries.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Experiments worth running}
+        \small
+        \begin{itemize}
+          \item Student with distillation vs the same student trained from labels only.
+          \item Temperature sweep, e.g.\ $T\in\{1,2,4,8\}$. The paper predicts small students prefer intermediate $T$.
+          \item Hard-label weight sweep.
+          \item Report parameters, memory, speed and task F1 for teacher and student.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Very simple: one extra loss term and one hyperparameter, $T$.
+          \item Architecture-agnostic: teacher and student can differ completely.
+          \item Works with unlabelled transfer data.
+          \item Strong regularisation effect on small data.
+          \item Unifies earlier logit matching as the high-$T$ limit.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item Only the \emph{output layer} is transferred. Intermediate representations are ignored.
+          \item Requires running the teacher on every training example, which is costly.
+          \item $T$ and the loss weight must be tuned; the best $T$ depends on student size.
+          \item Experiments are on classification only: MNIST, speech frames and images. Sequence generation is not studied.
+          \item The authors had not yet distilled the specialists back into one net.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions (1): what the field did next}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Direction & Representative later work\\
+    \midrule
+    Distil intermediate layers, not just outputs & FitNets (Romero et al., 2015) match hidden ``hints''; TinyBERT (Jiao et al., 2020) matches attention maps and hidden states\\
+    Distil sequence models & Sequence-level KD (Kim and Rush, 2016) trains the student on the teacher's beam-search outputs\\
+    Compress pretrained language models & DistilBERT (Sanh et al., 2019): 40\% smaller and 60\% faster, keeping 97\% of BERT's language-understanding performance\\
+    Student as big as the teacher & Born-Again Networks (Furlanello et al., 2018): a same-size student can \emph{outperform} its teacher\\
+    Better divergences for generation & MiniLLM (Gu et al., 2023) uses reverse KL so the student does not spread probability over bad outputs\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Future research directions (2): open questions}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Open in general}
+        \small
+        \begin{itemize}
+          \item \textbf{Why} does distillation work so well? Dark knowledge, label smoothing and optimisation ease are all partial explanations.
+          \item How large can the teacher--student gap be before distillation stops helping?
+          \item Distilling from many specialists back into one model, left open by this paper.
+          \item Choosing temperature automatically, or per example.
+          \item Distillation without the original data (data-free KD).
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Open for legal NLP (our setting)}
+        \small
+        \begin{itemize}
+          \item Does distillation preserve \emph{rare} but important classes, such as rare statutes in LSI, or does it favour the teacher's majority?
+          \item Can a cross-architecture teacher (encoder--decoder) help a decoder-only student?
+          \item Can confidential data stay in-house by distilling a big in-house model into a laptop-sized one?
+          \item Distilling long-document reasoning, e.g.\ judgment prediction, into short-context students.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item Knowledge is the \textbf{input--output mapping}, not the parameters, so it can move into a different model.
+    \item Train the student on the teacher's \textbf{soft targets}, softened with a \textbf{temperature} $T$, plus a small weight on the true labels. Scale the soft loss by $T^2$.
+    \item Matching logits is the high-temperature special case.
+    \item Results: a small MNIST net went from 146 to 74 errors. A single speech model kept over 80\% of a 10-model ensemble's gain. With soft targets, 3\% of the data reached 57.0\% vs 58.9\% with all of it.
+    \item Specialists on confusable class clusters improve very large classifiers cheaply and in parallel.
+    \item For us: the basis of the mandatory distillation experiment in Phases 2--7.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Hinton, G., Vinyals, O., and Dean, J. (2015). Distilling the Knowledge in a Neural Network. arXiv:1503.02531.
+  \vspace{3mm}
+
+  {\footnotesize Later work cited on the future-directions slide: Romero et al.\ (2015) FitNets; Kim and Rush (2016) Sequence-Level Knowledge Distillation; Furlanello et al.\ (2018) Born-Again Neural Networks; Sanh et al.\ (2019) DistilBERT; Jiao et al.\ (2020) TinyBERT; Gu et al.\ (2023) MiniLLM.}
+\end{frame}
+
+\end{document}

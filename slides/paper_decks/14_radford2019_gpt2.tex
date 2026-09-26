@@ -1,0 +1,435 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[GPT-2]{Language Models are Unsupervised Multitask Learners}
+\subtitle{Radford, Wu, Child, Luan, Amodei and Sutskever (OpenAI, 2019), the GPT-2 paper}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{A.\ Radford, J.\ Wu, R.\ Child, D.\ Luan, D.\ Amodei, I.\ Sutskever. \emph{Language Models are Unsupervised Multitask Learners}. OpenAI technical report, 2019.}
+{A large decoder-only language model (GPT-2, 1.5B parameters) trained on diverse web text starts to perform tasks such as reading comprehension, summarisation and translation \textbf{zero-shot}, with no task-specific training.}
+{Our A1 baseline is a GPT-2-style decoder (pre-LN, 1,024 context, scaled residual init), and the starter notebook uses the GPT-2 tokenizer. Phase 1, continuing a legal prompt, is exactly GPT-2's core task.}
+{Main deck: ``A1: decoder-only Transformer''. Glossary: ``Byte-level BPE'' and ``GPT-2 tokenizer''.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Narrow experts vs general systems}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item The usual recipe: collect a labelled dataset for \emph{one} task, train, test on similar data.
+        \item This gives \textbf{narrow experts}: brittle when inputs or task framing shift slightly.
+        \item Multitask learning helps, but the largest efforts used only 10--17 (dataset, objective) pairs. From a meta-learning view, that is only 10--17 \emph{training examples} of ``tasks''.
+        \item Creating labelled datasets at the scale needed would be very hard.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Question}: can a language model learn tasks \emph{from raw text alone}?
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{How transfer had evolved}
+        \small
+        \begin{enumerate}
+          \item Word vectors fed to task-specific models (word2vec, GloVe).
+          \item Contextual representations from RNNs (ELMo).
+          \item Transfer whole self-attention stacks, then fine-tune (GPT, BERT).
+          \item \textbf{This paper}: no fine-tuning at all. The pre-trained model does the task directly, zero-shot.
+        \end{enumerate}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea}
+
+\begin{frame}{Tasks are just text, so a language model can learn them}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      A language model estimates
+      \[
+        p(x)=\prod_{i=1}^{n}p(s_i\mid s_1,\ldots,s_{i-1})
+      \]
+      A general system should model $p(\text{output}\mid\text{input},\text{task})$. In language, the task itself can be written as text:
+      \begin{itemize}
+        \item (\emph{translate to french}, English text, French text)
+        \item (\emph{answer the question}, document, question, answer)
+      \end{itemize}
+      The supervised objective is the \emph{same} as the language-model objective, only evaluated on part of the sequence. So a good enough LM should pick up tasks that appear naturally in text.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Natural demonstrations in WebText}
+        \small
+        The paper found translation examples appearing naturally on web pages, e.g.:
+        \vspace{1mm}
+
+        \emph{``I'm not the cleverest man in the world, but like they say in French: Je ne suis pas un imbecile [I'm not a fool].''}
+        \vspace{1mm}
+
+        To predict such text, the model must in effect learn to translate.
+      \end{exampleblock}
+      \begin{exampleblock}{Legal analogy}
+        \small
+        Judgments contain ``In short, \ldots'' summaries and quoted statutes, so a legal LM may learn these skills from judgments alone.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Zero-shot prompting: invoking a task with text}
+  \small
+  The task is signalled only by how the input is written. No weights change.
+  \vspace{2mm}
+
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}lXl@{}}
+    \toprule
+    Task & Prompt format used in the paper & Model output\\
+    \midrule
+    Summarisation & \emph{article} \code{TL;DR:} & summary text\\
+    Translation & \code{english sentence = french sentence} (a few pairs), then \code{english sentence =} & French sentence\\
+    Reading comprehension & document + conversation history + \code{A:} & answer\\
+    Question answering & example Q/A pairs, then a new question & short answer\\
+    Cloze (CBT) & score each of 10 candidate words; pick the most probable sentence & best candidate\\
+    \bottomrule
+  \end{tabularx}
+  \vspace{2mm}
+  \begin{exampleblock}{Legal example of the same idea}
+    \small
+    ``\emph{\ldots the appeal is accordingly dismissed with costs.} \code{TL;DR:}'' $\to$ the model continues with a short summary of the judgment, with no summarisation training. This is how Phase 6 could be attempted before any fine-tuning.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{WebText: a large, diverse, curated dataset}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item Prior LMs trained on one domain: news, Wikipedia or books.
+        \item Common Crawl is huge but full of unintelligible documents.
+        \item \textbf{Idea}: use human curation as a quality filter. Scrape every outbound link from \textbf{Reddit} with at least 3 karma.
+        \item Result: about \textbf{8 million documents, 40 GB} of text, from 45 million links (up to December 2017).
+        \item All Wikipedia pages removed, to avoid overlap with test sets.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Why diversity matters}
+        \small
+        The more varied the text, the more naturally occurring ``task demonstrations'' the model sees: Q\&A threads, translations, summaries, lists.
+      \end{exampleblock}
+      \begin{block}{Our Phase-1 analogue}
+        \small
+        The capstone corpus mixes four legal sources (Acts, High Courts, Supreme Court, Tribunals). Mixing ratios are our lever for diversity.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Input representation: byte-level BPE}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Goal: assign a probability to \emph{any} string, with no lower-casing, no \code{<unk>}.
+      \begin{itemize}
+        \item Pure byte-level LMs were not competitive; Unicode-level BPE needs a base vocabulary of over 130,000.
+        \item \textbf{Byte-level BPE}: base vocabulary of only \textbf{256 bytes}; merges learned on top. Final vocabulary: \textbf{50,257}.
+        \item \textbf{Fix}: plain BPE learned many wasteful variants such as \code{dog.}, \code{dog!}, \code{dog?}. So merges across character categories (letters vs punctuation) are forbidden, except for spaces.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy example}
+        \small
+        Without the rule, the vocabulary may hold \code{dog}, \code{dog.}, \code{dog!}, \code{dog?}, \code{dog,}: five slots for one word.
+        \vspace{1mm}
+
+        With the rule: \code{dog} plus a separate \code{.}, \code{!}, \code{?}. The saved slots go to other words.
+        \vspace{1mm}
+
+        Legal version: \code{Section}, \code{Section,}, \code{Section.} collapse into one token \code{Section} plus punctuation.
+      \end{exampleblock}
+      \begin{block}{In our code}
+        \small
+        Our tokenizer uses the same byte-level BPE design, trained on legal text.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Model: a scaled-up GPT}
+  \begin{columns}[T]
+    \begin{column}{0.46\textwidth}
+      \small
+      \begin{tabular}{@{}rrr@{}}
+        \toprule
+        Parameters & Layers & $d_{\text{model}}$\\
+        \midrule
+        117M & 12 & 768\\
+        345M & 24 & 1024\\
+        762M & 36 & 1280\\
+        \textbf{1542M (GPT-2)} & \textbf{48} & \textbf{1600}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      The smallest equals the original GPT; the second equals BERT-large in size.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \small
+      Changes from GPT:
+      \begin{itemize}
+        \item \textbf{Pre-LN}: LayerNorm moved to the \emph{input} of each sub-block, plus one final LayerNorm after the last block.
+        \item \textbf{Scaled residual init}: residual-layer weights scaled by $1/\sqrt{N}$, where $N$ is the number of residual layers.
+        \item Vocabulary 50,257; context 512 $\to$ \textbf{1,024} tokens; batch size 512.
+      \end{itemize}
+      \begin{exampleblock}{Same choices in our A1}
+        \small
+        Pre-LN, final LayerNorm, 1,024 context, tied embeddings, residual init scaled by $1/\sqrt{2L}$.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Results}
+
+\begin{frame}{Zero-shot language modelling}
+  \centering
+  \scriptsize
+  \begin{tabular}{@{}lcccccccc@{}}
+    \toprule
+    & LAMBADA & LAMBADA & CBT-CN & CBT-NE & WikiText-2 & PTB & enwik8 & WikiText-103\\
+    & (PPL) & (ACC) & (ACC) & (ACC) & (PPL) & (PPL) & (BPB) & (PPL)\\
+    \midrule
+    Previous SOTA & 99.8 & 59.23 & 85.7 & 82.3 & 39.14 & 46.54 & 0.99 & 18.3\\
+    117M & 35.13 & 45.99 & 87.65 & 83.4 & 29.41 & 65.85 & 1.16 & 37.50\\
+    345M & 15.60 & 55.48 & 92.35 & 87.1 & 22.76 & 47.33 & 1.01 & 26.37\\
+    762M & 10.87 & 60.12 & 93.45 & 88.0 & 19.93 & 40.31 & 0.97 & 22.05\\
+    \textbf{1542M} & \textbf{8.63} & \textbf{63.24} & 93.30 & \textbf{89.05} & \textbf{18.34} & \textbf{35.76} & \textbf{0.93} & \textbf{17.48}\\
+    \bottomrule
+  \end{tabular}
+  \vspace{2mm}
+
+  \raggedright
+  \begin{exampleblock}{Reading it}
+    \small
+    No training on any of these datasets. GPT-2 sets a new state of the art on \textbf{7 of 8} language-modelling benchmarks. It fails only on One Billion Word (42.16 vs 21.8 perplexity), whose sentence-level shuffling destroys the long-range structure GPT-2 relies on. Every metric improves as the model grows.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Long-range dependencies: LAMBADA and CBT}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \textbf{LAMBADA}: predict the last word of a passage, which humans can only guess with at least 50 tokens of context.
+      \begin{itemize}
+        \item Perplexity: 99.8 $\to$ \textbf{8.6}.
+        \item Accuracy: 19\% (previous LMs) $\to$ 52.66\%, and \textbf{63.24\%} with a stop-word filter.
+        \item Most errors were valid continuations, but not valid \emph{final} words.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Children's Book Test}: choose the right word among 10 candidates. New records: \textbf{93.3\%} common nouns, \textbf{89.1\%} named entities.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Legal version of LAMBADA}
+        \small
+        ``\ldots The High Court had convicted the appellant under Section 302. Having examined the evidence, we find it unreliable. The conviction under Section 302 is therefore \_\_\_''
+        \vspace{1mm}
+
+        The right word, ``set aside'', needs the whole passage, not just the last few words. This is the skill our 512-word prompts test.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Zero-shot tasks}
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Task & GPT-2 result & Comparison\\
+    \midrule
+    CoQA reading comprehension & \textbf{55 F1} & matches or beats 3 of 4 supervised baselines (humans: 89)\\
+    Winograd Schema & \textbf{70.70\%} & +7 points over the previous best\\
+    WMT-14 Fr$\to$En & 11.5 BLEU & best unsupervised MT: 33.5\\
+    WMT-14 En$\to$Fr & 5 BLEU & slightly worse than word-by-word substitution\\
+    Natural Questions & 4.1\% exact match & 5.3$\times$ the smallest model; retrieval systems reach 30--50\%\\
+    \bottomrule
+  \end{tabular}
+  \vspace{2mm}
+
+  \raggedright
+  \begin{exampleblock}{Surprises}
+    \small
+    CoQA used none of its 127,000+ training question--answer pairs. For translation, non-English pages had been filtered out: only about 10 MB of French remained, 500$\times$ less than usual. On Natural Questions, accuracy is 63.1\% on the 1\% of questions GPT-2 is most confident about, so its confidence is well calibrated.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Summarisation with ``TL;DR:''}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \footnotesize
+      CNN/Daily Mail, ROUGE F1:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        Method & R-1 & R-2 & R-L & Avg\\
+        \midrule
+        Bottom-Up Sum (SOTA) & 41.22 & 18.68 & 38.34 & 32.75\\
+        Lede-3 & 40.38 & 17.66 & 36.62 & 31.55\\
+        Seq2Seq + Attention & 31.33 & 11.81 & 28.83 & 23.99\\
+        \textbf{GPT-2 TL;DR:} & 29.34 & 8.27 & 26.58 & 21.40\\
+        Random 3 sentences & 28.78 & 8.63 & 25.52 & 20.98\\
+        GPT-2, no hint & 21.58 & 4.03 & 19.47 & 15.03\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize Top-$k$ sampling with $k=2$; the first 3 generated sentences are the summary.}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Reading it}
+        \small
+        \begin{itemize}
+          \item Only just above picking 3 random sentences.
+          \item Removing ``TL;DR:'' drops the average by \textbf{6.4 points}: the text hint really does switch on summarisation behaviour.
+          \item Errors: focuses on recent content, confuses details such as how many cars crashed.
+        \end{itemize}
+        For Phase 6: zero-shot is a baseline to beat, not a solution. Fine-tuning is needed.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Generalisation vs memorisation}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Could GPT-2 just be recalling test data it saw in WebText?
+      \begin{itemize}
+        \item Bloom filters of all WebText 8-grams measure test-set overlap.
+        \item Benchmark test sets overlap WebText by 1--6\% (average 3.2\%). They overlap \emph{their own training splits} more: 5.9\% on average (1BW: 13.2\%).
+        \item Removing overlapping LAMBADA examples: perplexity 8.6 $\to$ 8.7, accuracy 63.2\% $\to$ 62.9\%. A small effect.
+        \item Train and held-out WebText perplexity fall \textbf{together} with size: even GPT-2 still \textbf{underfits}.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{alertblock}{A lesson we apply}
+        \small
+        The authors recommend n-gram overlap checks when building train/test splits.
+        \vspace{1mm}
+
+        Our Phase-1 pipeline splits train and validation \textbf{by document}, so no dev prompt comes from a training judgment. An 8-gram overlap check between our dev prompts and training bins would be a useful extra report item.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{What GPT-2 means for our capstone}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    GPT-2 finding & Implication for us\\
+    \midrule
+    Zero-shot ability grows log-linearly with size & Within 50--300M, bigger A1 variants should continue text better\\
+    Still underfits at 1.5B & Our 80M models on about 200M tokens are surely underfit; more tokens should help\\
+    Diverse data creates task demonstrations & Mixing all four legal sources may help more than one source\\
+    Task hints (``TL;DR:'') switch on behaviour & Try zero-shot prompts as baselines for Phases 3--6\\
+    Top-$k$ sampling for generation & The origin of the decoding knobs we tune for Phase 1\\
+    Data-overlap checks & Split by document; report n-gram overlap\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Showed zero-shot task transfer from pure language modelling.
+          \item Clear scaling evidence over four model sizes.
+          \item Byte-level BPE: any string can be modelled and evaluated.
+          \item Careful memorisation analysis.
+          \item Simple, influential architecture recipe.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations (several stated by the authors)}
+        \small
+        \begin{itemize}
+          \item Zero-shot performance is ``still far from usable'' in practice.
+          \item Summarisation, translation and QA are rudimentary.
+          \item Unidirectional: may be less efficient than BERT for understanding tasks.
+          \item Evaluation of many tasks is noisy; some tiny (Winograd: 273 examples).
+          \item Technical report; limited training details.
+          \item Web data brings biases and possible misuse, which led OpenAI to a staged release.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Stated by the authors}
+      \begin{itemize}
+        \item Find the ceiling with \textbf{fine-tuning}, e.g.\ on decaNLP and GLUE.
+        \item Test whether more data and capacity overcome the inefficiency of \textbf{unidirectional} representations shown by BERT.
+        \item Evaluate more tasks; better de-duplication.
+      \end{itemize}
+      \textbf{What followed}
+      \begin{itemize}
+        \item GPT-3 (Brown et al., 2020): 175B parameters and \textbf{few-shot in-context learning}.
+        \item Scaling laws; instruction tuning and RLHF (Kaplan et al., 2020; Ouyang et al., 2022).
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Open questions}
+        \small
+        \begin{itemize}
+          \item \emph{Why} do tasks emerge from next-token prediction?
+          \item How much of zero-shot skill is memorisation?
+          \item How small can a model be and still show useful zero-shot behaviour?
+          \item For legal NLP: does an 80--300M legal model show \emph{any} zero-shot skill, e.g.\ answering ``The statute applicable here is'' correctly? Measuring this would be a novel Phase-1 analysis.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item Tasks can be written as text, so a language model trained on diverse text can learn them without supervision.
+    \item \textbf{WebText}: 40 GB from Reddit-curated links. \textbf{Byte-level BPE} with a 50,257 vocabulary and a no-cross-category merge rule.
+    \item \textbf{GPT-2}: 1.5B-parameter decoder with pre-LN, scaled residual init and a 1,024-token context.
+    \item Zero-shot: state of the art on 7 of 8 LM benchmarks; CoQA 55 F1; LAMBADA 8.6 perplexity; weak but real summarisation and translation.
+    \item Performance grows log-linearly with size; even GPT-2 underfits.
+    \item For us: the template for A1 and for Phase 1's task of continuing a prompt.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Radford, A., Wu, J., Child, R., Luan, D., Amodei, D., and Sutskever, I.\ (2019). Language Models are Unsupervised Multitask Learners. OpenAI technical report.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Radford et al.\ (2018) GPT; Devlin et al.\ (2018) BERT; McCann et al.\ (2018) decaNLP; Sennrich et al.\ (2016) BPE; Fan et al.\ (2018) top-$k$ sampling; Paperno et al.\ (2016) LAMBADA; Reddy et al.\ (2018) CoQA; Brown et al.\ (2020) GPT-3; Kaplan et al.\ (2020) Scaling Laws; Hoffmann et al.\ (2022) Chinchilla; Ouyang et al.\ (2022) InstructGPT.}
+\end{frame}
+
+\end{document}

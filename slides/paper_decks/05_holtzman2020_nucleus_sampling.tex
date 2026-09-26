@@ -1,0 +1,392 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[Nucleus Sampling]{The Curious Case of Neural Text Degeneration}
+\subtitle{Holtzman, Buys, Du, Forbes and Choi (ICLR 2020), arXiv:1904.09751}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{A.\ Holtzman, J.\ Buys, L.\ Du, M.\ Forbes, Y.\ Choi. \emph{The Curious Case of Neural Text Degeneration}. ICLR 2020. University of Washington, Allen Institute for AI, University of Cape Town.}
+{Maximising likelihood (greedy, beam search) makes bland, repetitive text, and pure sampling makes gibberish. \textbf{Nucleus (top-$p$) sampling} samples only from the smallest set of tokens holding probability mass $p$.}
+{Phase 1 generates 128-word continuations; decoding directly affects BERTScore. Our \code{generation.py} implements top-$p$, top-$k$, temperature and a repetition penalty.}
+{Main deck: ``Step 05: decoding exactly 128 words''. Glossary: ``Decoding'' section.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Good models, bad text}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      Language models trained by maximum likelihood are excellent, yet:
+      \begin{itemize}
+        \item \textbf{Maximisation-based decoding} (greedy, beam search) gives \textbf{degenerate} text: bland, generic, and stuck in loops.
+        \item \textbf{Pure sampling} from the full distribution gives \textbf{incoherent} text that drifts off topic.
+      \end{itemize}
+      With GPT-2 Large and beam widths of 64 or more, the model often prefers to \emph{stop immediately} after the context.
+      \vspace{1mm}
+
+      \textbf{Question}: how should we decode \emph{open-ended} text such as stories, or our legal continuations?
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{The paper's Figure 1, abridged}
+        \scriptsize
+        Context: scientists discover unicorns in the Andes that speak English.
+        \vspace{1mm}
+
+        \textbf{Beam search, $b=32$}: ``\ldots researchers from the Universidad Nacional Autónoma de México (UNAM/Universidad Nacional Autónoma de México/Universidad Nacional Autónoma de México/\ldots''
+        \vspace{1mm}
+
+        \textbf{Pure sampling}: ``They were cattle called Bolivian Cavalleros; \ldots they speak huge, beautiful, paradisiacal Bolivian linguistic thing.''
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Open-ended vs directed generation}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Directed generation}
+        \small
+        The output is a tightly constrained transform of the input: translation, data-to-text, often summarisation.
+        Beam search works well enough because the input limits what can be said.
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Open-ended generation}
+        \small
+        Story writing and \textbf{text continuation}: many different continuations are acceptable. This freedom is where maximisation fails.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+  \vspace{3mm}
+  \begin{alertblock}{Where is our Phase 1?}
+    \small
+    In between. Continuing a 512-word judgment is open-ended, but the score compares against \emph{one} hidden true continuation. So the most human-like diversity is not automatically the highest-scoring choice. Tune on the dev set.
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}{Why maximisation fails: human text is not the most probable text}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item Per-token probability of \textbf{human} text varies a lot: it often picks surprising, informative words.
+        \item Beam-search text stays in a \emph{uniformly} high-probability zone.
+        \item \textbf{Repetition is self-reinforcing}: each time a phrase repeats, the model gives it \emph{higher} probability to repeat again. This held for most phrases the authors tested.
+      \end{itemize}
+      \vspace{1mm}
+      The authors' conjecture: people avoid stating the obvious (Grice's maxims), so making every word as predictable as possible is \emph{unlike} human language. Bigger models trained per-word will not fix this alone.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy example: the loop}
+        \small
+        ``\emph{The court held that the appeal is dismissed. The court held that the appeal is dismissed. The court held\ldots}''
+        \vspace{1mm}
+
+        After one repeat, ``The court held'' becomes even more likely, because the context now \emph{contains} that pattern. Greedy decoding cannot escape.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Why pure sampling fails: the unreliable tail}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item The vocabulary has tens of thousands of tokens.
+        \item Each tail token has a tiny probability, but \textbf{together} the tail can hold a lot of mass.
+        \item So pure sampling picks a strange token surprisingly often.
+        \item One bad token changes the context, and the model ``confuses itself'' from then on.
+      \end{itemize}
+      Pure-sampling text has \emph{higher} perplexity than human text (22.73 vs 12.38): it is less likely than real text.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy arithmetic}
+        \small
+        Suppose 30,000 tail tokens each have probability $0.00001$.
+        Together they hold $30{,}000\times0.00001=0.30$.
+        \vspace{1mm}
+
+        So about \textbf{3 steps in 10} would pick a tail token. Over a 180-token continuation, that is roughly 54 odd tokens: plenty to derail a legal paragraph.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: nucleus sampling}
+
+\begin{frame}{Nucleus (top-$p$) sampling}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      At each step, take the \textbf{smallest set} of tokens $V^{(p)}$ whose total probability is at least $p$:
+      \[
+        \sum_{x\in V^{(p)}}P(x\mid x_{1:i-1})\;\ge\;p
+      \]
+      Renormalise inside the set and sample:
+      \[
+        P'(x)=\begin{cases}P(x)/p' & x\in V^{(p)}\\ 0 & \text{otherwise}\end{cases},\quad p'=\sum_{x\in V^{(p)}}P(x)
+      \]
+      The \textbf{nucleus} usually holds between one and about a thousand candidates. Its size \emph{adapts} to how confident the model is.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{Compared with the alternatives}
+        \small
+        \begin{itemize}
+          \item \textbf{Top-$k$}: always keep exactly $k$ tokens. Truncates in the wrong place when the distribution is very flat or very peaked.
+          \item \textbf{Temperature $t<1$}: sharpens the distribution and shrinks the tail, but also cuts diversity and increases repetition.
+          \item \textbf{Top-$p$}: cuts the tail wherever it starts, and keeps as many good options as there really are.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Easy worked example: peaked vs flat contexts}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Peaked: ``The appeal is hereby \_\_''}
+        \small
+        dismissed 0.80, allowed 0.10, disposed 0.05, withdrawn 0.02, 30,000 others 0.03.
+        \vspace{1mm}
+
+        \textbf{Top-$p$, $p=0.9$}: $0.80+0.10=0.90$, so \textbf{2 tokens}.\\
+        \textbf{Top-$k$, $k=50$}: 50 tokens, including 46 from the junk tail, all boosted by renormalisation.
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Flat: ``The petitioner is a \_\_''}
+        \small
+        resident 0.06, company 0.05, farmer 0.05, trader 0.04, teacher 0.04, \ldots, many plausible nouns each near 0.01--0.03.
+        \vspace{1mm}
+
+        \textbf{Top-$p$, $p=0.9$}: perhaps 60 plausible nouns.\\
+        \textbf{Top-$k$, $k=3$}: only 3, so the text becomes bland and repetitive.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+  \vspace{2mm}
+  \small
+  No single $k$ suits both contexts. A single $p$ does, because the nucleus grows and shrinks with the model's confidence. {\scriptsize (Probabilities are illustrative.)}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Experiments}
+
+\begin{frame}{Setup and what is measured}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Model}: GPT-2 Large, trained on WebText (40 GB of web pages).
+        \item \textbf{Task}: 5,000 continuations of up to 200 tokens, each conditioned on the first paragraph (1--40 tokens) of a held-out WebText document.
+        \item \textbf{Principle}: good decoding should produce text whose statistics are \emph{close to human text}, not as probable as possible.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Measures}
+        \small
+        \begin{itemize}
+          \item \textbf{Perplexity} of the generated text under the model. Closer to human is better.
+          \item \textbf{Self-BLEU}: BLEU of each generation against the others. Lower means more diverse.
+          \item \textbf{Zipf coefficient}: shape of the word-frequency curve.
+          \item \textbf{Repetition \%}: generations ending in a loop.
+          \item \textbf{HUSE}: combines human typicality ratings (20 annotators $\times$ 200 texts) with model likelihood.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Main results}
+  \begin{columns}[T]
+    \begin{column}{0.6\textwidth}
+      \scriptsize
+      \begin{tabular}{@{}lccccc@{}}
+        \toprule
+        Method & PPL & S-BLEU4 & Zipf & Rep.\% & HUSE\\
+        \midrule
+        \textbf{Human} & \textbf{12.38} & \textbf{0.31} & \textbf{0.93} & \textbf{0.28} & --\\
+        Greedy & 1.50 & 0.50 & 1.00 & 73.66 & --\\
+        Beam, $b=16$ & 1.48 & 0.44 & 0.94 & 28.94 & --\\
+        Stochastic beam & 19.20 & 0.28 & 0.91 & 0.32 & --\\
+        Pure sampling & 22.73 & 0.28 & 0.93 & 0.22 & 0.67\\
+        Sampling, $t=0.9$ & 10.25 & 0.35 & 0.96 & 0.66 & 0.79\\
+        Top-$k=40$ & 6.88 & 0.39 & 0.96 & 0.78 & 0.19\\
+        Top-$k=640$ & 13.82 & 0.32 & 0.96 & 0.28 & 0.94\\
+        Top-$k=40$, $t=0.7$ & 3.48 & 0.44 & 1.00 & 8.86 & 0.08\\
+        \textbf{Nucleus $p=0.95$} & \textbf{13.13} & \textbf{0.32} & \textbf{0.95} & 0.36 & \textbf{0.97}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.36\textwidth}
+      \begin{exampleblock}{Reading the table}
+        \small
+        \begin{itemize}
+          \item Greedy repeats in \textbf{74\%} of texts; beam in 29\%.
+          \item Their perplexity (about 1.5) is far \emph{below} human (12.4): too predictable.
+          \item Nucleus is closest to human on perplexity, diversity and word frequencies, and gets the best HUSE (0.97).
+          \item The popular top-$k=40$, $t=0.7$ recipe repeats in 9\% of texts.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Diversity and repetition across settings}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Self-BLEU} (diversity):
+      \begin{itemize}
+        \item Common settings $t\in[0.5,1]$ and $k\in[1,100]$ make generations too similar to each other.
+        \item The usual range $p\in[0.9,1)$ matches human diversity.
+        \item Top-$k$ and temperature need extreme values to match, and then coherence suffers.
+      \end{itemize}
+      \textbf{Repetition}: every stochastic method repeats when its knob is set too low, because it then behaves like greedy search. Temperatures below 0.9 sharply increase repetition.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{The paper's qualitative example}
+        \small
+        Context: whales stranded on the West Australian coast.
+        \begin{itemize}
+          \item \textbf{Beam}: repeats one sentence about ``more than 50 per cent''.
+          \item \textbf{Pure sampling}: invents a bird species, ``umidauda''.
+          \item \textbf{Top-$k$}: veers into an unrelated event.
+          \item \textbf{Nucleus}: stays on topic, though it drifts from whales to birds.
+        \end{itemize}
+        Not perfect, but the best of the group.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{What this means for Phase 1}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      Our defaults: $t=0.8$, top-$k=50$, top-$p=0.95$, repetition penalty 1.1, EOS banned.
+      \begin{itemize}
+        \item Top-$p$ does the main tail cutting; top-$k=50$ is a safety cap.
+        \item The paper warns that $t<0.9$ plus small $k$ increases repetition. The repetition penalty helps counter this.
+        \item Greedy decoding is a useful \emph{baseline} to report, since the paper predicts loops.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Experiments worth running}
+        \small
+        \begin{itemize}
+          \item Greedy vs beam vs top-$k$ vs top-$p$ on dev BERTScore.
+          \item Sweep $p\in\{0.8,0.9,0.95,1.0\}$ and $t\in\{0.7,0.8,1.0\}$.
+          \item Measure repetition rate and self-BLEU of your continuations, as in the paper.
+          \item Check whether BERTScore prefers \emph{safer} (lower-entropy) text than human-like text: an important analysis point.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Very simple; a few lines of code; works with any language model.
+          \item Adapts the candidate set to model confidence at every step.
+          \item Explains \emph{why} beam search and pure sampling fail, with measurements.
+          \item Evaluates quality and diversity together (HUSE).
+          \item Became the default decoding method for open-ended generation.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item $p$ is still a hand-set hyperparameter.
+          \item A purely probability-based cut; it knows nothing about meaning or facts.
+          \item Studied with one model family (GPT-2) and web text.
+          \item HUSE needed a workaround (interpolating with the full distribution) because truncation gives zero probability to many tokens.
+          \item Human-likeness is not the goal of every task; directed tasks may prefer beam search.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions (1): from the paper and after}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Direction & Details\\
+    \midrule
+    Characterise the confidence region dynamically \emph{(paper)} & Learn where to truncate, rather than using a fixed $p$\\
+    Semantic utility in decoding \emph{(paper)} & Guide decoding by meaning, not only token probability\\
+    Combine training- and inference-time fixes \emph{(paper)} & E.g.\ unlikelihood training (Welleck et al., 2020) penalises repeated tokens during training\\
+    Entropy-aware truncation & Locally typical sampling (Meister et al., 2023); $\eta$- and $\epsilon$-sampling (Hewitt et al., 2022)\\
+    Perplexity-targeted decoding & Mirostat (Basu et al., 2021) keeps the generated text's surprise near a target\\
+    Contrast-based decoding & Contrastive search (Su et al., 2022); contrastive decoding with a weaker ``amateur'' model (Li et al., 2023)\\
+    Scale-aware truncation & Min-$p$ sampling (Nguyen et al., 2024) sets the cut relative to the top token's probability\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Future research directions (2): open questions}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Open in general}
+        \small
+        \begin{itemize}
+          \item Why do models give repetition high probability? Is it the training objective or the data?
+          \item Decoding for long documents: keeping topic and facts over thousands of tokens.
+          \item Optimising decoding for a downstream metric without hurting human quality.
+          \item Evaluating diversity and quality together, cheaply.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Open for legal NLP}
+        \small
+        \begin{itemize}
+          \item Legal text is formulaic, so repetition of fixed phrases is \emph{correct}. How do we penalise loops without penalising legal formulae?
+          \item Constrained decoding that keeps party names, section numbers and outcomes consistent with the prompt.
+          \item Choosing decoding separately for summaries (Phase 6) and continuations (Phase 1).
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item Likelihood-maximising decoding produces bland, repetitive text; repetition reinforces itself.
+    \item Pure sampling falls into the \textbf{unreliable tail} and becomes incoherent.
+    \item \textbf{Nucleus sampling}: sample only from the smallest set of tokens covering probability $p$. The set adapts to the model's confidence.
+    \item With GPT-2 Large, $p=0.95$ comes closest to human text on perplexity (13.13 vs 12.38), diversity and word frequencies, and has the best HUSE score (0.97).
+    \item For us: the core of Phase-1 decoding. Tune $p$, $t$ and the repetition penalty against dev BERTScore, and report repetition rates.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Holtzman, A., Buys, J., Du, L., Forbes, M., and Choi, Y.\ (2020). The Curious Case of Neural Text Degeneration. In \emph{International Conference on Learning Representations (ICLR)}. arXiv:1904.09751.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Hashimoto et al.\ (2019) HUSE; Welleck et al.\ (2020) Unlikelihood Training; Basu et al.\ (2021) Mirostat; Hewitt et al.\ (2022) Truncation Sampling as Language Model Desmoothing; Su et al.\ (2022) Contrastive Search; Meister et al.\ (2023) Locally Typical Sampling; Li et al.\ (2023) Contrastive Decoding; Nguyen et al.\ (2024) Min-p Sampling.}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,475 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[Attention Is All You Need]{Attention Is All You Need}
+\subtitle{Vaswani et al.\ (NeurIPS 2017), arXiv:1706.03762}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{A.\ Vaswani, N.\ Shazeer, N.\ Parmar, J.\ Uszkoreit, L.\ Jones, A.\ N.\ Gomez, {\L}.\ Kaiser, I.\ Polosukhin. \emph{Attention Is All You Need}. NeurIPS 2017. Google Brain and Google Research.}
+{Replace recurrence and convolution entirely with attention: the \textbf{Transformer}, an encoder--decoder built from multi-head self-attention and feed-forward layers.}
+{All four of our Phase-1 architectures are Transformers. A2 is closest to this paper's original encoder--decoder design.}
+{Main deck: ``The four architectures''. Glossary: ``Transformer building blocks'' and ``Architectures''.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Why move beyond recurrent networks?}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      In 2017 the best sequence models were RNNs (LSTMs, GRUs) or CNNs, often joined by attention.
+      \vspace{1mm}
+
+      \textbf{RNNs are sequential}: hidden state $h_t$ needs $h_{t-1}$. Positions in one example cannot be processed in parallel. This hurts most on long sequences.
+      \vspace{1mm}
+
+      \textbf{CNNs are parallel}, but relating two distant positions needs many layers: $O(n)$ for ConvS2S, $O(\log n)$ for ByteNet.
+      \vspace{1mm}
+
+      \textbf{Idea}: attention already relates any two positions in one step. What if we use \emph{only} attention?
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy analogy}
+        \small
+        An RNN reads a 40-page judgment like a clerk reading aloud, one word at a time, remembering everything in one notebook.
+        \vspace{1mm}
+
+        A Transformer spreads all 40 pages on a table. Every sentence can glance at every other sentence at once, and many clerks can work in parallel.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Self-attention vs recurrence vs convolution}
+  \small
+  $n$ = sequence length, $d$ = representation size, $k$ = kernel size, $r$ = neighbourhood size.
+  \vspace{2mm}
+
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    Layer type & Cost per layer & Sequential operations & Max path length\\
+    \midrule
+    Self-attention & $O(n^2\cdot d)$ & $O(1)$ & $O(1)$\\
+    Recurrent & $O(n\cdot d^2)$ & $O(n)$ & $O(n)$\\
+    Convolutional & $O(k\cdot n\cdot d^2)$ & $O(1)$ & $O(\log_k n)$\\
+    Restricted self-attention & $O(r\cdot n\cdot d)$ & $O(1)$ & $O(n/r)$\\
+    \bottomrule
+  \end{tabular}
+  \vspace{3mm}
+
+  \begin{itemize}
+    \item \textbf{Path length}: how many steps a signal travels between two positions. Shorter paths make long-range dependencies easier to learn.
+    \item Self-attention is cheaper than recurrence when $n<d$, which was typical for sentences (e.g.\ $n\approx50$, $d=512$).
+    \item For very long inputs, the $n^2$ term dominates. This is why our A4 uses sliding-window (restricted) attention.
+  \end{itemize}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea: attention only}
+
+\begin{frame}{Scaled dot-product attention}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Each position has a \textbf{query} $q$, a \textbf{key} $k$ and a \textbf{value} $v$. The output for a query is a weighted sum of the values, weighted by query--key similarity:
+      \[
+        \text{Attention}(Q,K,V)=\text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+      \]
+      \textbf{Why divide by $\sqrt{d_k}$?} If $q$ and $k$ have independent unit-variance entries, $q\cdot k$ has variance $d_k$. Large dot products push the softmax into regions with tiny gradients. Scaling keeps the variance at 1.
+      \vspace{1mm}
+
+      Dot-product attention is fast because it is just matrix multiplication.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy worked example ($d_k=2$)}
+        \small
+        Sentence: ``The court dismissed''. Query from ``dismissed'': $q=[1,1]$.
+        \vspace{1mm}
+
+        \begin{tabular}{@{}lccc@{}}
+          & key & $q\!\cdot\!k/\sqrt2$ & weight\\
+          \midrule
+          The & $[0,1]$ & 0.71 & 0.16\\
+          court & $[1,2]$ & 2.12 & \textbf{0.67}\\
+          dismissed & $[1,0]$ & 0.71 & 0.16\\
+        \end{tabular}
+        \vspace{1mm}
+
+        With values The $[1,0]$, court $[0,1]$, dismissed $[1,1]$, the output is $0.16[1,0]+0.67[0,1]+0.16[1,1]=[0.33,\,0.84]$.
+        ``Dismissed'' mostly gathers information from ``court'', \emph{who} dismissed.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Multi-head attention}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Instead of one attention over $d_{\text{model}}=512$ dimensions, run $h=8$ \textbf{heads} in parallel, each on its own learned projections of size $d_k=d_v=64$:
+      \[
+        \text{head}_i=\text{Attention}(QW_i^Q,\;KW_i^K,\;VW_i^V)
+      \]
+      \[
+        \text{MultiHead}=\text{Concat}(\text{head}_1,\ldots,\text{head}_h)\,W^O
+      \]
+      Total cost is about that of one full-size head.
+      \vspace{1mm}
+
+      \textbf{Why}: one head averages everything into one weighted sum. Several heads can attend to \emph{different} things at once.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Intuition in a judgment}
+        \small
+        In ``The respondent, who was represented by counsel, did not appear before the tribunal'':
+        \begin{itemize}
+          \item one head links ``did not appear'' to ``respondent'' (subject);
+          \item another links ``appear'' to ``tribunal'' (location);
+          \item another links ``represented'' to ``counsel''.
+        \end{itemize}
+        The paper's appendix shows heads that track syntax and coreference.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Three uses of attention in the model}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{enumerate}
+        \item \textbf{Encoder self-attention}: every source position attends to every source position.
+        \item \textbf{Decoder masked self-attention}: each target position attends only to \emph{earlier} target positions. Future scores are set to $-\infty$ before the softmax, so generation stays auto-regressive.
+        \item \textbf{Encoder--decoder (cross) attention}: decoder queries attend to the encoder's outputs, the keys and values. Each output word can look at the whole input.
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Translation example}
+        \small
+        Translating ``The appeal is dismissed'' into Hindi:
+        \begin{itemize}
+          \item encoder self-attention works out that ``dismissed'' refers to ``appeal'';
+          \item while writing each Hindi word, the decoder's masked self-attention sees the Hindi words already written;
+          \item cross-attention looks back at the English words it needs next.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The full architecture}
+  \begin{columns}[T]
+    \begin{column}{0.46\textwidth}
+      \centering
+\resizebox{0.95\linewidth}{!}{%
+      \begin{tikzpicture}[node distance=2mm]
+        \node[box,minimum width=28mm] (ein) {input emb.\ + positions};
+        \node[hot,above=of ein,minimum width=28mm] (esa) {multi-head self-attn};
+        \node[box,above=of esa,minimum width=28mm] (eff) {feed-forward};
+        \node[draw=navy,dashed,rounded corners,fit=(esa)(eff),inner sep=3pt,label={[font=\scriptsize]left:$\times6$}] (E) {};
+        \node[box,right=9mm of ein,minimum width=28mm] (din) {output emb.\ + positions};
+        \node[hot,above=of din,minimum width=28mm] (dsa) {masked self-attn};
+        \node[hot,above=of dsa,minimum width=28mm] (dca) {cross-attn};
+        \node[box,above=of dca,minimum width=28mm] (dff) {feed-forward};
+        \node[draw=navy,dashed,rounded corners,fit=(dsa)(dff),inner sep=3pt,label={[font=\scriptsize]right:$\times6$}] (D) {};
+        \node[box,above=4mm of dff] (out) {linear + softmax};
+        \draw[arr] (ein)--(esa); \draw[arr] (din)--(dsa); \draw[arr] (dff)--(out);
+        \draw[arr,warm] (eff.east) -- node[above,font=\tiny]{memory} (dca.west);
+      \end{tikzpicture}}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item Each sub-layer is wrapped as $\text{LayerNorm}(x+\text{Sublayer}(x))$: a residual connection, then layer normalisation (\emph{post-LN}).
+        \item Feed-forward network, applied to each position separately:
+          \[
+            \text{FFN}(x)=\max(0,xW_1+b_1)W_2+b_2
+          \]
+          with $d_{ff}=2048$ (4$\times$ wider).
+        \item Input and output embeddings and the pre-softmax layer share one weight matrix; embeddings are multiplied by $\sqrt{d_{\text{model}}}$.
+        \item Base model: $N=6$, $d_{\text{model}}=512$, $h=8$: 65M parameters.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Positional encoding}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Attention ignores order, so position information is \emph{added} to the embeddings:
+      \[ PE_{(pos,2i)}=\sin\!\big(pos/10000^{2i/d}\big) \]
+      \[ PE_{(pos,2i+1)}=\cos\!\big(pos/10000^{2i/d}\big) \]
+      \begin{itemize}
+        \item Wavelengths form a geometric series from $2\pi$ to $10000\cdot2\pi$.
+        \item For any fixed offset $k$, $PE_{pos+k}$ is a \emph{linear function} of $PE_{pos}$. The authors hoped this would let the model attend by relative position.
+        \item Learned position embeddings gave nearly identical results. Sinusoids were chosen because they might extrapolate to longer sequences.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy analogy: a clock}
+        \small
+        Each pair of dimensions is a clock hand turning at its own speed. Fast hands tell neighbouring positions apart; slow hands tell distant ones apart. Together they give each position a unique reading.
+      \end{exampleblock}
+      \begin{block}{In our models}
+        \small
+        A2 uses these sinusoids. A1 uses learned positions. A3 (ALiBi) and A4 (RoPE) use later relative schemes.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Training recipe}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Data}: WMT 2014 EN--DE (4.5M sentence pairs, shared BPE vocabulary of about 37k); EN--FR (36M sentences, 32k word-pieces). Batches of about 25k source and 25k target tokens.
+        \item \textbf{Hardware}: 8 NVIDIA P100 GPUs. Base: 100k steps in 12 hours. Big: 300k steps in 3.5 days.
+        \item \textbf{Adam} with $\beta_1=0.9$, $\beta_2=0.98$, $\epsilon=10^{-9}$.
+        \item \textbf{Learning rate} with warm-up, then inverse-square-root decay:
+        \[
+          \text{lr}=d_{\text{model}}^{-0.5}\min\!\big(\text{step}^{-0.5},\,\text{step}\cdot\text{warmup}^{-1.5}\big)
+        \]
+        with warmup $=4000$.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{Regularisation}
+        \small
+        \begin{itemize}
+          \item Dropout 0.1 on each sub-layer output and on embedding sums.
+          \item \textbf{Label smoothing} $\epsilon=0.1$: the target puts 0.9 on the true token and spreads 0.1 over the rest. This hurts perplexity but improves BLEU.
+        \end{itemize}
+      \end{block}
+      \begin{exampleblock}{Inference}
+        \small
+        Beam search (beam 4, length penalty 0.6). Averages of the last 5 (base) or 20 (big) checkpoints.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Results}
+
+\begin{frame}{Machine translation (newstest2014)}
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        & \multicolumn{2}{c}{BLEU} & \multicolumn{2}{c}{Training FLOPs}\\
+        Model & EN-DE & EN-FR & EN-DE & EN-FR\\
+        \midrule
+        GNMT + RL & 24.6 & 39.92 & $2.3\!\cdot\!10^{19}$ & $1.4\!\cdot\!10^{20}$\\
+        ConvS2S & 25.16 & 40.46 & $9.6\!\cdot\!10^{18}$ & $1.5\!\cdot\!10^{20}$\\
+        MoE & 26.03 & 40.56 & $2.0\!\cdot\!10^{19}$ & $1.2\!\cdot\!10^{20}$\\
+        ConvS2S ensemble & 26.36 & 41.29 & $7.7\!\cdot\!10^{19}$ & $1.2\!\cdot\!10^{21}$\\
+        \midrule
+        Transformer (base) & 27.3 & 38.1 & \multicolumn{2}{c}{$3.3\!\cdot\!10^{18}$}\\
+        Transformer (big) & \textbf{28.4} & \textbf{41.8} & \multicolumn{2}{c}{$2.3\!\cdot\!10^{19}$}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{exampleblock}{Reading the table}
+        \small
+        \begin{itemize}
+          \item EN--DE: 28.4 BLEU, \textbf{more than 2 BLEU} above the best earlier models, including ensembles.
+          \item EN--FR: a new single-model record of 41.8.
+          \item The base model already beats all earlier EN--DE systems with a fraction of the training compute.
+        \end{itemize}
+      \end{exampleblock}
+      {\scriptsize The paper's text states 41.0 for EN--FR in Section 6.1; the abstract and Table 2 give 41.8.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Model variations (EN--DE dev set, newstest2013)}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Change from base & PPL & BLEU & Params\\
+        \midrule
+        Base ($h=8$, $d_k=64$) & 4.92 & 25.8 & 65M\\
+        $h=1$, $d_k=512$ & 5.29 & 24.9 & \\
+        $h=4$, $d_k=128$ & 5.00 & 25.5 & \\
+        $h=16$, $d_k=32$ & 4.91 & 25.8 & \\
+        $h=32$, $d_k=16$ & 5.01 & 25.4 & \\
+        $d_k=16$ (smaller keys) & 5.16 & 25.1 & 58M\\
+        $N=2$ layers & 6.11 & 23.7 & 36M\\
+        dropout 0.0 & 5.77 & 24.6 & \\
+        learned positions & 4.92 & 25.7 & \\
+        Big ($d=1024$, $h=16$) & \textbf{4.33} & \textbf{26.4} & 213M\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Lessons}
+        \small
+        \begin{itemize}
+          \item One head is 0.9 BLEU worse; too many heads also hurt.
+          \item Smaller keys hurt: judging compatibility is not trivial.
+          \item Bigger models are better.
+          \item Dropout matters a lot for avoiding overfitting.
+          \item Learned and sinusoidal positions are about equal.
+        \end{itemize}
+      \end{exampleblock}
+      {\scriptsize Perplexities are per word-piece.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Beyond translation: constituency parsing}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Parsing turns a sentence into a syntax tree, written as a longer bracketed sequence. It has strong structural constraints, and RNN sequence-to-sequence models struggled with small data.
+      \vspace{1mm}
+
+      A 4-layer Transformer ($d_{\text{model}}=1024$), with almost no task-specific tuning, on WSJ Section 23:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lc@{}}
+        \toprule
+        Setting & F1\\
+        \midrule
+        WSJ only (40K sentences) & 91.3\\
+        Semi-supervised (about 17M sentences) & 92.7\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Why it matters}
+        \small
+        With only the 40K WSJ sentences, the Transformer beat the Berkeley parser (90.4), where RNN sequence-to-sequence models had failed.
+        Only one model in the comparison, the RNN Grammar, did better.
+        \vspace{1mm}
+
+        This was early evidence that the architecture is general-purpose, as our seven phases assume.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{How our Phase-1 models descend from this paper}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lXX@{}}
+    \toprule
+    Paper component & Our A1--A4 & Change and reason\\
+    \midrule
+    Encoder--decoder & A2 keeps it; A1, A4 decoder-only; A3 one shared stack & decoder-only is simpler for language modelling\\
+    Post-LN & pre-LN (A1--A3), RMSNorm (A4) & pre-LN trains more stably when deep\\
+    ReLU FFN & ReLU (A2), GELU (A1, A3), SwiGLU (A4) & gated units work better (Shazeer, 2020)\\
+    Sinusoidal positions & sinusoids (A2), learned (A1), ALiBi (A3), RoPE (A4) & relative schemes extrapolate better\\
+    Multi-head attention & MHA; grouped-query in A4 & smaller KV-cache\\
+    Warm-up + inverse sqrt & warm-up + cosine & common modern choice\\
+    Tied embeddings & tied embeddings & fewer parameters\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Fully parallel training over positions.
+          \item Constant path length between any two tokens.
+          \item Better quality at a fraction of the training cost.
+          \item Simple, uniform building blocks; scales with size.
+          \item Attention weights are partly interpretable.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item $O(n^2)$ time and memory in sequence length. A problem for long legal judgments.
+          \item Generation is still one token at a time.
+          \item Positions only via added encodings; extrapolation to longer inputs was not tested.
+          \item Post-LN can be unstable in deep stacks without warm-up.
+          \item Evaluated mainly on translation and one parsing task.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions (1): stated in the paper, and what followed}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Direction & What followed\\
+    \midrule
+    Other modalities \emph{(paper)} & Vision Transformer (Dosovitskiy et al., 2021) for images; Transformers for speech and video\\
+    Local, restricted attention for large inputs \emph{(paper)} & Longformer (Beltagy et al., 2020) and sliding windows as in Mistral; FlashAttention (Dao et al., 2022) makes exact attention memory-efficient\\
+    Less sequential generation \emph{(paper)} & Non-autoregressive translation; speculative decoding\\
+    Pre-training at scale & BERT (encoder-only), GPT (decoder-only), T5 (encoder--decoder)\\
+    Better positions & Relative positions (Shaw et al., 2018), RoPE (2021), ALiBi (2022)\\
+    Normalisation and FFN & Pre-LN (Xiong et al., 2020); gated FFNs such as SwiGLU (Shazeer, 2020)\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Future research directions (2): open questions}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Open in general}
+        \small
+        \begin{itemize}
+          \item Sub-quadratic sequence models that match attention quality, such as state-space models.
+          \item Why attention heads specialise, and which heads matter.
+          \item Scaling laws: the best balance of model size, data and compute.
+          \item Length generalisation beyond training context.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Open for legal NLP}
+        \small
+        \begin{itemize}
+          \item Reading whole judgments (tens of thousands of tokens) within a free GPU's memory.
+          \item Does the encoder--decoder split (A2) help summarisation more than decoder-only models?
+          \item Can attention maps serve as explanations a lawyer would accept?
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item The Transformer removes recurrence and convolution. It uses \textbf{scaled dot-product attention}, \textbf{multi-head} attention, position-wise feed-forward layers, residual connections and LayerNorm.
+    \item Masked decoder self-attention keeps generation auto-regressive; cross-attention links decoder and encoder.
+    \item Sinusoidal positional encodings supply word order.
+    \item Results: 28.4 BLEU (EN--DE) and 41.8 (EN--FR), state of the art at much lower training cost. It also generalises to parsing.
+    \item Every model in our capstone is a descendant of this architecture.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.\ N., Kaiser, {\L}., and Polosukhin, I.\ (2017). Attention Is All You Need. In \emph{Advances in Neural Information Processing Systems 30}. arXiv:1706.03762.
+  \vspace{3mm}
+
+  {\footnotesize Later work cited: Shaw et al.\ (2018); Beltagy et al.\ (2020) Longformer; Xiong et al.\ (2020) On Layer Normalization in the Transformer Architecture; Shazeer (2020) GLU Variants; Dosovitskiy et al.\ (2021) ViT; Dao et al.\ (2022) FlashAttention.}
+\end{frame}
+
+\end{document}

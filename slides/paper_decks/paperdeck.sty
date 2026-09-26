@@ -1,0 +1,56 @@
+% Shared look for the paper-summary decks (matches capstone_phase1 and glossary).
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{paperdeck}
+\usetheme{Madrid}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{lmodern}
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{booktabs,tabularx,multicol}
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,decorations.pathreplacing}
+
+\definecolor{navy}{HTML}{1F3A5F}
+\definecolor{accent}{HTML}{2A78D6}
+\definecolor{warm}{HTML}{EB6834}
+\definecolor{aqua}{HTML}{1BAF7A}
+\definecolor{gold}{HTML}{EDA100}
+\definecolor{soft}{HTML}{EEF3FA}
+\definecolor{ink}{HTML}{333333}
+\definecolor{exgreen}{HTML}{0F7A52}
+\setbeamercolor{structure}{fg=navy}
+\setbeamercolor{palette primary}{bg=navy,fg=white}
+\setbeamercolor{palette secondary}{bg=navy!85!black,fg=white}
+\setbeamercolor{palette tertiary}{bg=navy!70!black,fg=white}
+\setbeamercolor{frametitle}{bg=navy,fg=white}
+\setbeamercolor{title}{bg=navy,fg=white}
+\setbeamercolor{block title}{bg=accent,fg=white}
+\setbeamercolor{block body}{bg=soft,fg=ink}
+\setbeamercolor{block title alerted}{bg=warm,fg=white}
+\setbeamercolor{block body alerted}{bg=warm!8,fg=ink}
+\setbeamercolor{block title example}{bg=aqua,fg=white}
+\setbeamercolor{block body example}{bg=aqua!8,fg=ink}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{section in toc}[sections numbered]
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\tikzset{
+  box/.style={draw=navy,rounded corners=3pt,fill=soft,align=center,font=\scriptsize,minimum height=6mm,inner sep=3pt},
+  hot/.style={box,fill=accent!15},
+  arr/.style={-{Stealth[length=2mm]},thick,navy},
+}
+% Paper metadata shown on the "paper at a glance" slide
+\newcommand{\paperglance}[4]{%
+  \begin{frame}{The paper at a glance}
+    \begin{columns}[T]
+      \begin{column}{0.52\textwidth}
+        \begin{block}{Citation}\small #1\end{block}
+        \begin{block}{One-sentence summary}\small #2\end{block}
+      \end{column}
+      \begin{column}{0.44\textwidth}
+        \begin{exampleblock}{Why it matters for our capstone}\small #3\end{exampleblock}
+        \begin{alertblock}{Where it appears in our slides}\small #4\end{alertblock}
+      \end{column}
+    \end{columns}
+  \end{frame}}
+\endinput

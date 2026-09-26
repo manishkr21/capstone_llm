@@ -1,0 +1,445 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[BERTScore]{BERTScore: Evaluating Text Generation with BERT}
+\subtitle{Zhang, Kishore, Wu, Weinberger and Artzi (ICLR 2020), arXiv:1904.09675}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{T.\ Zhang, V.\ Kishore, F.\ Wu, K.\ Q.\ Weinberger, Y.\ Artzi. \emph{BERTScore: Evaluating Text Generation with BERT}. ICLR 2020. Cornell University and ASAPP.}
+{Score generated text by matching each token to its most similar token in the reference, using cosine similarity of \emph{contextual embeddings} instead of exact word overlap.}
+{BERTScore F1 is the \textbf{primary metric} for Phase 1 (continuations) and Phase 6 (summaries). Our \code{06\_evaluate.py} computes it locally.}
+{Main deck: ``Step 06: the metrics''. Glossary: ``BERTScore'' slide.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{What is wrong with n-gram metrics?}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      BLEU, ROUGE and METEOR count overlapping words or n-grams between a candidate and a reference. Two failures:
+      \begin{enumerate}
+        \item \textbf{Paraphrases are punished.} Correct meaning in different words scores low.
+        \item \textbf{Order and long-range meaning are missed.} With short n-grams, swapping cause and effect (``A because B'' vs ``B because A'') is only mildly penalised.
+      \end{enumerate}
+      \vspace{1mm}
+      Learned metrics (e.g.\ RUSE, BEER) fix some of this, but need human judgement data for training and may not transfer to new domains.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{The paper's example}
+        \small
+        Reference: \emph{people like foreign cars}.
+        \begin{itemize}
+          \item A: \emph{people like visiting places abroad}
+          \item B: \emph{consumers prefer imported cars}
+        \end{itemize}
+        BLEU and METEOR score A \textbf{higher} than B, although B means the same thing and A does not.
+      \end{exampleblock}
+      \begin{exampleblock}{A legal version}
+        \small
+        Reference: \emph{the appeal is dismissed}.
+        Candidate: \emph{the petition is rejected}.
+        Word overlap sees only ``the'' and ``is''.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The basic idea}
+
+\begin{frame}{BERTScore in three steps}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{enumerate}
+        \item \textbf{Embed}: run reference $x$ and candidate $\hat x$ through a pretrained encoder (BERT, RoBERTa, \ldots). Each token gets a \emph{contextual} vector that depends on its sentence.
+        \item \textbf{Compare}: compute the cosine similarity of every reference token with every candidate token. Vectors are pre-normalised, so this is a dot product.
+        \item \textbf{Match greedily}: each token takes its best match on the other side. Average these to get recall and precision, then F1.
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \begin{tikzpicture}[node distance=3mm]
+        \node[box] (r) {reference $x$};
+        \node[box,right=6mm of r] (c) {candidate $\hat x$};
+        \node[hot,below=of r] (er) {encoder};
+        \node[hot,below=of c] (ec) {encoder};
+        \node[box,below=12mm of $(r)!0.5!(c)$,minimum width=36mm] (m) {cosine matrix $x_i^\top\hat x_j$};
+        \node[box,below=of m,fill=aqua!15] (s) {greedy max, then $R$, $P$, $F_1$};
+        \draw[arr] (r)--(er); \draw[arr] (c)--(ec);
+        \draw[arr] (er)--(m); \draw[arr] (ec)--(m); \draw[arr] (m)--(s);
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The formulas}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \[
+        R_{\text{BERT}}=\frac{1}{|x|}\sum_{x_i\in x}\max_{\hat x_j\in\hat x}x_i^\top\hat x_j
+      \]
+      \[
+        P_{\text{BERT}}=\frac{1}{|\hat x|}\sum_{\hat x_j\in\hat x}\max_{x_i\in x}x_i^\top\hat x_j
+      \]
+      \[
+        F_{\text{BERT}}=2\,\frac{P_{\text{BERT}}\cdot R_{\text{BERT}}}{P_{\text{BERT}}+R_{\text{BERT}}}
+      \]
+      \begin{itemize}
+        \item \textbf{Recall}: is every reference token covered by something similar in the candidate?
+        \item \textbf{Precision}: is every candidate token supported by something in the reference?
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{Two optional extras}
+        \small
+        \textbf{idf weighting}: rare words matter more.
+        \[
+          \text{idf}(w)=-\log\tfrac1M\textstyle\sum_{i=1}^{M}\mathbb{I}[w\in x^{(i)}]
+        \]
+        computed on the $M$ test references, with plus-one smoothing.
+        \vspace{1mm}
+
+        \textbf{Baseline rescaling}: raw scores cluster in a narrow range. Subtract the average score $b$ of random sentence pairs:
+        \[
+          \hat R=\frac{R-b}{1-b}
+        \]
+        This only improves readability; rankings are unchanged.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Easy worked example}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      Reference: \emph{appeal dismissed with costs}\\
+      Candidate: \emph{petition rejected with costs}
+      \vspace{1mm}
+
+      Illustrative cosine similarities (content words only):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        & petition & rejected & costs\\
+        \midrule
+        appeal & \textbf{0.80} & 0.30 & 0.20\\
+        dismissed & 0.30 & \textbf{0.85} & 0.25\\
+        costs & 0.20 & 0.25 & \textbf{1.00}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      {\scriptsize Numbers chosen for illustration, not computed by a model.}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Scoring}
+        \small
+        Recall: row maxima $0.80,0.85,1.00$, so $R=0.883$.\\
+        Precision: column maxima $0.80,0.85,1.00$, so $P=0.883$.\\
+        $F_1=0.883$.
+        \vspace{1mm}
+
+        Exact unigram matching finds only ``costs'': $P=R=1/3$. BERTScore rewards the right \emph{meaning}.
+      \end{exampleblock}
+      \begin{alertblock}{Watch out}
+        \small
+        ``Allowed'' and ``dismissed'' occur in similar contexts, so a reversed outcome may lose less score than it should.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Design choices and the paper's recommendations}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{12 embedding models} were compared: BERT, RoBERTa, XLNet and XLM variants.
+        \item \textbf{Which layer?} Intermediate layers work better than the last one. The best layer per model was chosen on WMT16.
+        \item \textbf{Greedy vs optimal matching}: greedy is simpler and performed comparably (appendix).
+        \item \textbf{Tokenisation}: each model's own word pieces.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{Recommendations}
+        \small
+        \begin{itemize}
+          \item Use \textbf{F1}: recall, precision and F1 alternate as best, but F1 is reliably good.
+          \item English: \textbf{24-layer RoBERTa-large}.
+          \item Other languages: multilingual BERT, which is less stable for low-resource languages.
+          \item idf weighting sometimes helps slightly and sometimes not.
+        \end{itemize}
+      \end{exampleblock}
+      \begin{block}{Our local setup}
+        \small
+        \code{bert\_score} with \code{lang="en"} defaults to RoBERTa-large, matching this advice.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Experiments}
+
+\begin{frame}{How a metric is evaluated}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      A good metric \textbf{agrees with human judgements}. Tests used:
+      \begin{itemize}
+        \item \textbf{System level}: Pearson correlation between each system's average metric score and its human score.
+        \item \textbf{Segment level}: Kendall correlation per sentence. Much harder.
+        \item \textbf{Model selection}: in 100 random systems, does the metric pick the same best system as humans (Hits@1)?
+        \item \textbf{Robustness}: can it tell real paraphrases from adversarial word swaps?
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{block}{Data}
+        \small
+        \begin{itemize}
+          \item WMT18 translation metrics task: 149 systems, 14 language directions. WMT16--17 add 202 more.
+          \item COCO 2015 image captioning: 12 systems.
+          \item QQP and PAWS paraphrase pairs.
+        \end{itemize}
+        363 systems in total across MT and captioning.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Machine translation: segment-level agreement}
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+      \footnotesize
+      Kendall $\tau$ with human judgements on WMT18 (to-English / from-English):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Pair & BLEU & YiSi-1 & $F_{\text{BERT}}$\\
+        \midrule
+        cs & .233/.389 & .319/.496 & \textbf{.404/.562}\\
+        de & .415/.620 & .488/.691 & \textbf{.550/.728}\\
+        et & .285/.414 & .351/.546 & \textbf{.397/.586}\\
+        fi & .154/.355 & .231/.504 & \textbf{.296/.546}\\
+        ru & .228/.330 & .300/.407 & \textbf{.353/.423}\\
+        tr & .145/.261 & .234/.418 & \textbf{.292}/.399\\
+        zh & .178/.311 & .211/.323 & \textbf{.264/.364}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{exampleblock}{Reading it}
+        \small
+        \begin{itemize}
+          \item BERTScore beats BLEU in every direction at the sentence level, often by a wide margin.
+          \item It even beat RUSE, a metric \emph{trained} on human judgements.
+          \item At the \emph{system} level most metrics already correlate at 0.95 or more, so gains there are smaller.
+        \end{itemize}
+        So BERTScore is most useful for judging \textbf{individual outputs}.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Image captioning and paraphrase robustness}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \footnotesize
+      \textbf{COCO 2015}, Pearson correlation with two human measures (M1 / M2):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        Metric & M1 & M2\\
+        \midrule
+        BLEU & $-0.019$ & $-0.005$\\
+        ROUGE-L & 0.090 & 0.096\\
+        CIDEr & 0.438 & 0.440\\
+        SPICE (task-specific) & 0.759 & 0.750\\
+        $R_{\text{BERT}}$ & 0.888 & 0.863\\
+        $R_{\text{BERT}}$ + idf & \textbf{0.917} & \textbf{0.889}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      Only LEIC, which is trained on COCO and sees the images, scored higher.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \footnotesize
+      \textbf{Paraphrase detection}, AUC (QQP / adversarial PAWS):
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        Method & QQP & PAWS\\
+        \midrule
+        BERT trained on QQP & 0.963 & 0.351\\
+        BLEU & 0.707 & 0.527\\
+        METEOR & 0.755 & 0.532\\
+        $F_{\text{BERT}}$ & 0.761 & 0.685\\
+        $F_{\text{BERT}}$ + idf & \textbf{0.777} & \textbf{0.693}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      PAWS swaps words: ``flights from New York to Florida'' vs ``from Florida to New York''. n-gram metrics fall to near chance (0.5); BERTScore drops much less.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Speed}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Despite running a large model, BERTScore is practical:
+      \begin{itemize}
+        \item About \textbf{192.5 candidate--reference pairs per second} on one GTX-1080Ti GPU.
+        \item The WMT18 EN--DE test set (2,998 sentences) takes \textbf{15.6 s}, against 5.4 s for SacreBLEU.
+      \end{itemize}
+      The authors conclude it is cheap enough to use during validation, e.g.\ for early stopping, as well as for testing.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{For our dev set}
+        \small
+        200 dev continuations of 128 words each are a few hundred pairs.
+        Scoring them takes seconds on a GPU. The one-time download of RoBERTa-large (about 1.4 GB) costs more than the scoring itself.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{What this means for the capstone}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item Phase 1 and Phase 6 are ranked by BERTScore F1, so a continuation that \textbf{paraphrases} the hidden text well can score high even with few exact word matches.
+        \item Content words, such as parties, statutes and outcomes, count more than style.
+        \item Decoding choices matter: very random sampling adds off-topic tokens that lower precision; very repetitive text lowers recall.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Experiments to run}
+        \small
+        \begin{itemize}
+          \item Compare dev BERTScore with dev loss: do they rank checkpoints the same way?
+          \item Temperature and top-$p$ sweeps, scored by BERTScore.
+          \item Report $P$, $R$ and $F_1$ separately to see \emph{why} a model scores as it does.
+          \item Check a few outputs with reversed outcomes to see how much BERTScore penalises them.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Rewards paraphrases and meaning, not surface form.
+          \item Task-agnostic; needs no human-judgement training data.
+          \item Much better sentence-level agreement with humans than BLEU.
+          \item More robust to adversarial word swaps.
+          \item Available in 104 languages via multilingual BERT.
+          \item Fast enough for routine use.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item Scores depend on the model, layer and version, so they are not comparable across setups.
+          \item No single configuration wins everywhere.
+          \item Greedy token matching ignores global structure.
+          \item Unstable for some low-resource settings: recall for Turkish$\to$English correlated only 0.054 at system level.
+          \item Measures similarity, not \textbf{factual correctness}: a fluent wrong outcome may still score well.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions (1): from the paper and after}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Direction & Details\\
+    \midrule
+    Task-specific metrics built on BERTScore \emph{(paper)} & Use BERTScore as a subroutine, adapted to each task's needs\\
+    BERTScore as a training loss \emph{(paper)} & It is differentiable, so it can reduce the gap between the training objective and evaluation\\
+    When does idf weighting help? \emph{(paper)} & Likely depends on domain and test data; left open\\
+    Optimal-transport matching & MoverScore (Zhao et al., 2019) uses earth mover's distance over contextual embeddings\\
+    Learned metrics on pretrained models & BLEURT (Sellam et al., 2020) and COMET (Rei et al., 2020) are fine-tuned on human ratings\\
+    Generation-based and LLM judges & BARTScore (Yuan et al., 2021); LLM-as-judge methods such as G-Eval (Liu et al., 2023)\\
+    Domain-specific embeddings & The paper notes SciBERT-based BERTScore for scientific summaries (Gabriel et al., 2019)\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Future research directions (2): open questions}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Open in general}
+        \small
+        \begin{itemize}
+          \item Detecting \textbf{factual errors and negation} with embedding metrics.
+          \item Evaluating long outputs: whole summaries, not sentences.
+          \item Calibrated, comparable scores across models and versions.
+          \item Metrics that resist being gamed when used as training targets.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Open for legal NLP}
+        \small
+        \begin{itemize}
+          \item Would a \textbf{legal-domain encoder} give BERTScores that agree better with lawyers' judgements?
+          \item Weighting legally critical tokens: outcome, statute, party, date.
+          \item Pairing BERTScore with an outcome-consistency check for summaries and continuations.
+          \item Building a small human-rated legal set to measure how well BERTScore agrees with experts.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item n-gram metrics punish paraphrases and miss long-range meaning.
+    \item \textbf{BERTScore}: contextual embeddings, a cosine-similarity matrix, greedy max matching, then $R$, $P$ and $F_1$. Optional idf weighting and baseline rescaling.
+    \item It agrees with humans much better than BLEU at the sentence level (e.g.\ EN--DE $\tau$ .550 vs .415), and ranks near the top at the system level.
+    \item Strong on captioning (0.917 vs SPICE 0.759) and robust to adversarial paraphrases.
+    \item Recommendation: F1 with RoBERTa-large for English.
+    \item For us: the metric that ranks Phase 1 and Phase 6, so tune decoding against it on the dev set.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Zhang, T., Kishore, V., Wu, F., Weinberger, K.\ Q., and Artzi, Y.\ (2020). BERTScore: Evaluating Text Generation with BERT. In \emph{International Conference on Learning Representations (ICLR)}. arXiv:1904.09675.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Papineni et al.\ (2002) BLEU; Lin (2004) ROUGE; Banerjee and Lavie (2005) METEOR; Zhao et al.\ (2019) MoverScore; Gabriel et al.\ (2019); Sellam et al.\ (2020) BLEURT; Rei et al.\ (2020) COMET; Yuan et al.\ (2021) BARTScore; Liu et al.\ (2023) G-Eval.}
+\end{frame}
+
+\end{document}

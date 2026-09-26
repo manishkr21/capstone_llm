@@ -1,0 +1,397 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\title[IL-TUR]{IL-TUR: Benchmark for Indian Legal Text Understanding and Reasoning}
+\subtitle{Joshi, Paul, Sharma, Goyal, Ghosh and Modi (ACL 2024), arXiv:2407.05399}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{A.\ Joshi, S.\ Paul, A.\ Sharma, P.\ Goyal, S.\ Ghosh, A.\ Modi. \emph{IL-TUR: Benchmark for Indian Legal Text Understanding and Reasoning}. ACL 2024 (arXiv v2, November 2024). IIT Kanpur and IIT Kharagpur.}
+{A single benchmark of eight Indian legal NLP tasks, with unified data formats, baselines (including LLMs) and a public leaderboard. Current models are far from solving it.}
+{This is the capstone's \textbf{base paper}. Phases 2--7 are IL-TUR tasks: L-NER, RR, CJPE, LSI, SUMM and PCR.}
+{Main deck: ``Capstone at a glance'' and every Phase 2--7 slide.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem}
+
+\begin{frame}{Why legal NLP for India?}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{itemize}
+        \item India has about \textbf{50 million pending cases} across district, state and federal courts (National Judicial Data Grid, 2023).
+        \item ``Justice delayed is justice denied.''
+        \item Legal work runs on documents, so NLP could help lawyers and judges read, search and summarise faster.
+        \item But legal NLP tasks existed in isolation, with different formats and metrics, so progress was hard to track.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{exampleblock}{The idea in one line}
+        \small
+        Do for Indian legal NLP what GLUE did for general NLP: one benchmark, one format, one leaderboard.
+      \end{exampleblock}
+      \begin{alertblock}{Not meant to replace judges}
+        \small
+        The goal is to \emph{augment} legal practitioners, e.g.\ by suggesting statutes, surfacing precedents or summarising, not to automate decisions.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Why a separate benchmark for legal text?}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Challenge & What it means, with an example\\
+    \midrule
+    1.\ Domain vocabulary & Everyday words take special meanings: ``consideration'', ``relief'', ``ratio'', ``stay''\\
+    2.\ Very long documents & An Indian Supreme Court judgment averages about \textbf{4,000 words}; BERT reads only 512 tokens\\
+    3.\ Unstructured and noisy & Many documents are typed manually in courts, with typos and no consistent sections\\
+    4.\ Sub-domains differ & A model trained on civil law may fail on banking or insurance law: domain adaptation is hard\\
+    5.\ Explainability required & A lawyer or judge must see \emph{why} a model predicts an outcome\\
+    \bottomrule
+  \end{tabularx}
+  \vspace{2mm}
+  \begin{exampleblock}{Mixed legal system}
+    \small
+    India is mainly \textbf{common law}: higher courts can overrule precedents, so outcomes need reasoning beyond the statute book. Some areas (e.g.\ banking, insurance) follow \textbf{civil law}. IL-TUR covers both.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{How IL-TUR differs from other legal benchmarks}
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    Benchmark & Jurisdiction & Task types & Languages\\
+    \midrule
+    LexGLUE & US, EU & classification & English\\
+    LEXTREME & EU, Brazil & classification & 24 EU\\
+    FAIRLEX & EU, US, China, CH & fairness & several\\
+    LBOX & Korea & class., generation & Korean\\
+    LegalBench & mostly US & class., generation & English\\
+    LawBench & China & class., gen., extraction & Chinese\\
+    \textbf{IL-TUR} & \textbf{India} & \textbf{class., retrieval, gen., extraction} & \textbf{English + 9 Indian}\\
+    \bottomrule
+  \end{tabular}
+  \vspace{2mm}
+
+  \raggedright
+  \begin{exampleblock}{Key differences}
+    \small
+    Tasks are grounded in the \textbf{real legal workflow}, not exam-style questions. Documents are \textbf{long}: about 4,000 words, against about 200 in LegalBench. Tasks include retrieval, generation and explanation, and both common and civil law are covered.
+  \end{exampleblock}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The benchmark}
+
+\begin{frame}{Design principles}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \begin{enumerate}
+        \item \textbf{Legal understanding and world knowledge}: tasks need real legal knowledge plus common sense.
+        \item \textbf{Difficulty}: not solvable by a layperson; hard for current models.
+        \item \textbf{Language}: English and the most frequent Indian court languages.
+        \item \textbf{Automatic evaluation} with metrics that align with human judgement.
+        \item \textbf{Public availability}: CC BY-NC-SA data and a public leaderboard.
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Harmonisation}
+        \small
+        Several tasks existed before, each with its own format and metric. IL-TUR converts all of them to a \textbf{uniform JSON format}, collects training scripts, and defines a standard evaluation.
+      \end{block}
+      \begin{exampleblock}{Anonymisation}
+        \small
+        Named entities are anonymised in RR, CJPE, BAIL, LSI and PCR data, to address ethical concerns and to stop models from learning biases tied to names.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The eight tasks}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}llrlX@{}}
+    \toprule
+    Task & Dataset & Avg words & Type & Key skill\\
+    \midrule
+    L-NER & 105 docs, 650k words & 6,180 & sequence labelling & legal roles of entities (new task)\\
+    RR & 21,184 sentences & 25,796 & multi-class & legal semantics per sentence\\
+    CJPE & ILDC, 34k docs & 3,336 & class.\ + extraction & understanding and reasoning, with explanation\\
+    BAIL & HLDC, 176k docs (Hindi) & 86 & classification & reasoning in Hindi\\
+    LSI & ILSI, 65k samples & 2,406 & multi-label & applying statutes to facts\\
+    PCR & IL-PCR, 7,070 docs & 8,096 & retrieval & legal relevance between cases\\
+    SUMM & In-Abs, 7,130 docs & 4,376 & generation & legal understanding and writing\\
+    L-MT & MILPaC, 17,853 pairs & 49 & generation & English $\leftrightarrow$ 9 Indian languages\\
+    \bottomrule
+  \end{tabularx}
+  \vspace{2mm}
+
+  \small
+  Note the lengths: prior case retrieval documents average about 8,100 words, far beyond a 1,024-token window.
+\end{frame}
+
+\begin{frame}{Tasks in the litigation process, and in our capstone}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \centering
+      \begin{tikzpicture}[node distance=2.5mm]
+        \node[box,minimum width=46mm] (f) {read facts: \textbf{L-NER}, \textbf{RR}, \textbf{SUMM}};
+        \node[hot,below=of f,minimum width=46mm] (s) {find applicable law: \textbf{LSI}};
+        \node[hot,below=of s,minimum width=46mm] (p) {find precedents: \textbf{PCR}};
+        \node[hot,below=of p,minimum width=46mm] (d) {decide: \textbf{CJPE}, \textbf{BAIL}};
+        \node[box,below=of d,minimum width=46mm] (t) {re-appeal: translate, \textbf{L-MT}};
+        \draw[arr] (f)--(s); \draw[arr] (s)--(p); \draw[arr] (p)--(d); \draw[arr] (d)--(t);
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}ll@{}}
+        \toprule
+        Capstone phase & IL-TUR task\\
+        \midrule
+        Phase 2 & L-NER\\
+        Phase 3 & RR (CL and IT domains)\\
+        Phase 4 & CJPE (prediction part)\\
+        Phase 5 & LSI\\
+        Phase 6 & SUMM\\
+        Phase 7 & PCR\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      \small
+      BAIL (Hindi) and L-MT (translation) are not capstone phases. Phase 1, the foundation model, is the capstone's own addition.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Easy examples of each capstone task}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{@{}lXl@{}}
+    \toprule
+    Task & Input (simplified) & Output\\
+    \midrule
+    L-NER & ``Appeal by \emph{Ram Kumar} against the order of the \emph{High Court of Delhi} dated \emph{3 May 2019}\ldots'' & APP, COURT, DATE spans\\
+    RR & ``The accused was arrested on 3 May.'' / ``Whether Section 302 applies.'' & Fact / Issue\\
+    CJPE & full judgment with the final order removed & 1 (appeal accepted)\\
+    LSI & facts: ``the accused, together with two others, planned and caused the death of\ldots'' & IPC 302, IPC 120B\\
+    PCR & query judgment with citations removed, and a pool of candidate judgments & top-7 relevant cases\\
+    SUMM & 4,000-word judgment & a few-paragraph summary\\
+    \bottomrule
+  \end{tabularx}
+  \vspace{2mm}
+  \begin{exampleblock}{Why L-NER is not ordinary NER}
+    \small
+    A standard NER model tags the judge, petitioner and respondent all as PERSON. L-NER must know their \emph{legal roles}, which needs legal understanding. Its gold data was annotated by law students, with entity definitions from legal academics.
+  \end{exampleblock}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Results}
+
+\begin{frame}{Best baselines per task}
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    Task & Best score & Metric & Model\\
+    \midrule
+    L-NER & 48.58\% & strict macro-F1 & InLegalBERT + CRF\\
+    RR & 69.01\% & macro-F1 & MTL-BERT\\
+    CJPE & 81.31\% & macro-F1 & InLegalBERT + BiLSTM\\
+    BAIL & 81\% & macro-F1 & TF-IDF + IndicBERT\\
+    LSI & 28.08\% & macro-F1 & LeSICiN (graph-based)\\
+    PCR & 39.15\% & $\mu$F1@K & event-based model\\
+    SUMM & 0.33 / 0.86 & ROUGE-L / BERTScore & Legal-LED\\
+    L-MT & 0.28 / 0.32 / 0.57 & BLEU / GLEU / chrF++ & Microsoft Translator\\
+    \bottomrule
+  \end{tabular}
+  \vspace{2mm}
+
+  \raggedright
+  \begin{exampleblock}{Reading it}
+    \small
+    Strict L-NER is below 50\% (exact boundaries are hard), LSI below 30\% macro-F1 (rare statutes), and PCR below 40\% (legal relevance is subtle).
+    These are the scores our Phase 2--7 systems will be compared against.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Does in-domain pre-training help?}
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}llccc@{}}
+    \toprule
+    Task & Setup & BERT & LegalBERT & InLegalBERT\\
+    \midrule
+    L-NER & flat, chunks & 39.59 & 45.58 & \textbf{48.58}\\
+    RR & flat, sentences & 58 & 54 & 58\\
+    CJPE & hierarchical & 71.14 & 78.21 & \textbf{81.31}\\
+    LSI & hierarchical & 18.44 & 21.74 & \textbf{26.23}\\
+    PCR & flat, chunks & \textbf{9.24} & 8.67 & 7.57\\
+    \bottomrule
+  \end{tabular}
+  \vspace{1mm}
+
+  {\scriptsize Macro-F1 (strict for L-NER). LegalBERT: pre-trained on EU/US legal text. InLegalBERT: on Indian legal text.}
+  \vspace{2mm}
+
+  \raggedright
+  \begin{exampleblock}{Lesson for our Phase 1}
+    \small
+    Except for PCR, performance rises from general BERT, to foreign legal BERT, to \textbf{Indian} legal BERT: it tracks how in-domain the pre-training was.
+    This supports our plan to pre-train from scratch on Indian legal text. For CJPE, \emph{hierarchical} models (encoder + BiLSTM over chunks) worked best, because judgments exceed 512 tokens.
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}{Large language models are far behind}
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+      \footnotesize
+      Best GPT-3.5 / GPT-4 score over 0-, 1- and 2-shot prompts, vs the task-specific best:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Task (metric) & GPT-3.5 & GPT-4 & Best baseline\\
+        \midrule
+        L-NER (strict mF1) & 32.84 & 24.03 & \textbf{48.58}\\
+        RR (mF1) & 30.95 & 38.18 & \textbf{69.01}\\
+        CJPE (mF1) & 56.74 & 68.29 & \textbf{81.31}\\
+        BAIL (mF1) & 61.0 & 66.67 & \textbf{81}\\
+        LSI (mF1) & 22.61 & 23.99 & \textbf{28.08}\\
+        SUMM (ROUGE-L) & 0.22 & 0.23 & \textbf{0.33}\\
+        L-MT (BLEU) & 0.26 & \textbf{0.36} & 0.28\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{exampleblock}{Reading it}
+        \small
+        \begin{itemize}
+          \item Task-specific models beat GPT-4 on every task except translation.
+          \item Long contexts and structured outputs (spans, one label per sentence) are hard to get from prompting.
+          \item Extra examples did not reliably help; one-shot was sometimes worse than zero-shot.
+          \item PCR could not be tried: the candidate pool exceeds even GPT-4's context.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Generalising across jurisdictions}
+  \small
+  Most tasks are jurisdiction-specific (statutes, bail practice), but summarisation can be tested across countries: train on Indian \textbf{In-Abs}, then test zero-shot on UK Supreme Court summaries (\textbf{UK-Abs}).
+  \vspace{2mm}
+
+  \centering
+  \footnotesize
+  \begin{tabular}{@{}llccc@{}}
+    \toprule
+    Model & Trained on & ROUGE-1 & ROUGE-L & BERTScore\\
+    \midrule
+    SummaRuNNer & In-Abs & \textbf{0.604} & 0.225 & 0.828\\
+    & UK-Abs & 0.493 & \textbf{0.274} & \textbf{0.849}\\
+    Legal-LED & In-Abs & \textbf{0.557} & 0.242 & 0.844\\
+    & UK-Abs & 0.482 & \textbf{0.264} & \textbf{0.851}\\
+    \bottomrule
+  \end{tabular}
+  \vspace{2mm}
+
+  \raggedright
+  \begin{exampleblock}{Reading it}
+    \small
+    Models trained only on Indian data summarise UK judgments decently: higher ROUGE-1, and comparable ROUGE-L and BERTScore. Cross-jurisdiction adaptation is left as future work.
+  \end{exampleblock}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item First unified benchmark for Indian legal NLP.
+          \item Realistic, workflow-grounded tasks with long documents.
+          \item Several new tasks and datasets (e.g.\ L-NER).
+          \item Uniform formats, public data and leaderboard.
+          \item Strong baselines, including LLM comparisons.
+          \item Anonymisation to reduce bias.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations (mostly stated by the authors)}
+        \small
+        \begin{itemize}
+          \item Not every legal sub-domain is covered in each task.
+          \item Multilingual only for L-MT; BAIL only in Hindi.
+          \item Some datasets were built with ML tools (e.g.\ fact extraction for LSI), so labels may be imperfect.
+          \item Explainability is addressed mainly in CJPE.
+          \item LLMs were evaluated on subsets, because of cost.
+          \item Only eight tasks so far.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Stated by the authors}
+      \begin{itemize}
+        \item Add tasks, e.g.\ \textbf{legal coreference resolution} for information extraction and knowledge graphs.
+        \item A \textbf{single model for all tasks}, e.g.\ mT5 or multi-task adapters.
+        \item More Indian languages and lower-court data.
+        \item Refined datasets built with legal professionals.
+        \item Cross-jurisdiction domain adaptation.
+        \item Two-stage retrieval so LLMs can attempt PCR.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Directions our capstone explores}
+        \small
+        \begin{itemize}
+          \item A \textbf{self-hosted foundation model} trained only on Indian legal text and reused across six tasks, close to the authors' ``one model for all tasks'' goal.
+          \item Parameter-efficient adaptation (LoRA, LORMA) and distillation for small, private deployments.
+          \item Long-document strategies (chunking, hierarchies, ALiBi or RoPE) for CJPE, LSI and PCR.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item India's court backlog motivates legal NLP; legal text is long, noisy, specialised and needs explanations.
+    \item \textbf{IL-TUR}: eight tasks (L-NER, RR, CJPE, BAIL, LSI, PCR, SUMM, L-MT), English and 9 Indian languages, unified formats and a public leaderboard.
+    \item Best baselines leave large gaps: strict L-NER 48.6\%, LSI 28.1\%, PCR 39.2\%.
+    \item In-domain (Indian legal) pre-training helps on most tasks; hierarchical models help on long documents.
+    \item GPT-3.5 and GPT-4 trail task-specific models on every task except translation.
+    \item For us: Phases 2--7 \emph{are} IL-TUR tasks, and these baselines are the bar to beat.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Joshi, A., Paul, S., Sharma, A., Goyal, P., Ghosh, S., and Modi, A.\ (2024). IL-TUR: Benchmark for Indian Legal Text Understanding and Reasoning. In \emph{Proceedings of ACL 2024}. arXiv:2407.05399. Leaderboard: \url{https://exploration-lab.github.io/IL-TUR/}.
+  \vspace{3mm}
+
+  {\footnotesize Other work cited: Malik et al.\ (2021) ILDC; Malik et al.\ (2022) Semantic Segmentation of Legal Documents; Kapoor et al.\ (2022) HLDC; Paul et al.\ (2022) LeSICiN; Joshi et al.\ (2023) U-CREAT (event-based PCR); Paul et al.\ (2023) InLegalBERT; Chalkidis et al.\ (2022) LexGLUE; Guha et al.\ (2023) LegalBench.}
+\end{frame}
+
+\end{document}

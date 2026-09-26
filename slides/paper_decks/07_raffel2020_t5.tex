@@ -1,0 +1,525 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{paperdeck}
+\newcommand{\mgrid}[2]{%
+  \begin{tikzpicture}[scale=0.26]
+    \foreach \i in {0,...,5}{\foreach \j in {0,...,5}{
+      \pgfmathtruncatemacro{\ok}{#2}
+      \ifnum\ok=1 \fill[accent] (\j,-\i) rectangle ++(0.9,-0.9);
+      \else \fill[black!8] (\j,-\i) rectangle ++(0.9,-0.9); \fi }}
+    \node[font=\scriptsize,anchor=north,align=center] at (3,-6.2) {#1};
+  \end{tikzpicture}}
+\title[T5]{Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer}
+\subtitle{Raffel et al.\ (JMLR 2020), arXiv:1910.10683}
+\author[Paper summary]{Paper summary for the CS-781 capstone}
+\date{}
+\begin{document}
+
+\begin{frame}\titlepage\end{frame}
+
+\paperglance
+{C.\ Raffel, N.\ Shazeer, A.\ Roberts, K.\ Lee, S.\ Narang, M.\ Matena, Y.\ Zhou, W.\ Li, P.\ J.\ Liu. \emph{Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer}. JMLR 21, 2020. Google.}
+{Cast every NLP task as ``text in, text out'', then run a large controlled study of architectures, objectives, data, fine-tuning and scale. The result is \textbf{T5}.}
+{T5 directly compares encoder--decoder, prefix-LM and decoder-only models under equal budgets: our A2, A3 and A1. It also compares adapters with full fine-tuning (Phases 2--7).}
+{Main deck: ``The four architectures'' and ``A controlled experiment plan''.}
+
+\begin{frame}{Roadmap}
+  \begin{multicols}{2}\small\tableofcontents\end{multicols}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The problem and the framework}
+
+\begin{frame}{Too many variables, too few controlled comparisons}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      By 2019, transfer learning (pre-train, then fine-tune) had many competing recipes: BERT, GPT, XLNet, MASS, UniLM\ldots
+      \vspace{1mm}
+
+      Each paper changed several things at once: architecture, objective, data, model size, training length. It was unclear \emph{which} choices actually mattered.
+      \vspace{1mm}
+
+      \textbf{T5's approach}:
+      \begin{enumerate}
+        \item One unified \textbf{text-to-text} format for all tasks.
+        \item A reasonable baseline.
+        \item Change \textbf{one factor at a time} and measure it on many tasks.
+        \item Combine the best choices and scale up.
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Why this matters to us}
+        \small
+        Our Phase-1 study is the same kind of work on a smaller scale: four architectures, same data, same budget, one variable at a time.
+        T5 shows how to design such a study, and gives a prediction for our A1-vs-A2-vs-A3 comparison.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The text-to-text framework}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Every task becomes: input text (with a short \textbf{task prefix}) $\to$ output text. One model, one loss (maximum likelihood with teacher forcing), one decoding procedure.
+      \vspace{1mm}
+
+      \scriptsize
+      \begin{tabular}{@{}p{4.3cm}p{1.6cm}@{}}
+        \toprule
+        Input & Target\\
+        \midrule
+        translate English to German: That is good. & Das ist gut.\\
+        mnli premise: I hate pigeons. hypothesis: My feelings towards pigeons are filled with animosity. & entailment\\
+        summarize: \emph{article} & \emph{summary}\\
+        stsb sentence1: \ldots\ sentence2: \ldots & 3.8\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Easy legal examples}
+        \small
+        \code{judgment: <case text>} $\to$ \code{1}\\
+        \code{statutes: <case text>} $\to$ \code{IPC 302, IPC 120B}\\
+        \code{role: The accused was arrested on 3 May.} $\to$ \code{Fact}\\
+        \code{summarize: <judgment>} $\to$ \code{<summary>}
+        \vspace{1mm}
+
+        Even regression (a similarity score such as 3.8) is emitted as text.
+      \end{exampleblock}
+      \begin{alertblock}{A risk}
+        \small
+        The model could output an invalid label, e.g.\ ``hamburger''. It counts as wrong; the authors never saw it happen.
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{C4: the Colossal Clean Crawled Corpus}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      Common Crawl produces about 20 TB of text per month, mostly boilerplate, menus, code and gibberish. Filtering heuristics:
+      \begin{itemize}
+        \item keep lines ending in terminal punctuation; keep lines of 5 or more words; drop pages under 3 sentences;
+        \item drop pages with bad words, ``lorem ipsum'', or a curly bracket (code);
+        \item drop lines mentioning Javascript or cookie and privacy policies;
+        \item deduplicate repeated three-sentence spans;
+        \item keep only pages detected as English with probability 0.99 or more.
+      \end{itemize}
+      The result is about \textbf{750 GB} of clean English text.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Lessons for our legal corpus}
+        \small
+        Our Phase-1 data is already legal text, but similar cleaning ideas apply:
+        \begin{itemize}
+          \item drop OCR fragments and page headers;
+          \item deduplicate repeated boilerplate such as cause titles and standard clauses;
+          \item drop tiny fragments (our \code{min\_words} filter).
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{The baseline model and objective}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \small
+      \begin{itemize}
+        \item \textbf{Encoder--decoder}, each stack like BERT-base: 12 blocks, $d_{\text{model}}=768$, $d_{ff}=3072$, 12 heads. About \textbf{220M} parameters.
+        \item Pre-LN with a scale-only LayerNorm (no bias). \textbf{Relative position bias}: a learned scalar per head and per distance bucket, 32 buckets, growing logarithmically up to 128 tokens.
+        \item SentencePiece vocabulary of 32k; AdaFactor optimiser; inverse-square-root learning rate.
+        \item Pre-training: $2^{19}$ steps $\times$ $2^{16}$ tokens $\approx$ \textbf{34B tokens}. No data is repeated.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Span-corruption objective}
+        \small
+        Drop 15\% of tokens. Replace each dropped \emph{span} with a unique sentinel. The target lists only the dropped spans.
+        \vspace{1mm}
+
+        Input: ``Thank you \code{<X>} me to your party \code{<Y>} week.''\\
+        Target: ``\code{<X>} for inviting \code{<Y>} last \code{<Z>}''
+        \vspace{1mm}
+
+        Short targets make pre-training cheap.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Does pre-training help, and how noisy are results?}
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        & GLUE & CNNDM & SQuAD & SGLUE\\
+        \midrule
+        Baseline (10 runs) & 83.28 & 19.24 & 80.88 & 71.36\\
+        Std.\ deviation & 0.235 & 0.065 & 0.343 & 0.416\\
+        No pre-training & 66.22 & 17.60 & 50.31 & 53.04\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      \small
+      Pre-training gives large gains everywhere except where data is plentiful (e.g.\ EnFr translation, 39.82 vs 39.77).
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{exampleblock}{A good habit to copy}
+        \small
+        The authors trained the baseline \textbf{10 times} to measure run-to-run noise. A later change that moves GLUE by only 0.2 is within one standard deviation and may be noise.
+        \vspace{1mm}
+
+        For our capstone: repeat the baseline with 2--3 seeds if possible, before claiming a small gain.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{The systematic study}
+
+\begin{frame}{Architectures compared: it is all about the mask}
+  \begin{columns}[T]
+    \begin{column}{0.46\textwidth}
+      \centering
+      \mgrid{fully visible\\(encoder)}{1}\hspace{1mm}
+      \mgrid{causal\\(decoder / LM)}{\j<=\i ? 1 : 0}\hspace{1mm}
+      \mgrid{causal with prefix\\(prefix LM)}{(\j<3 || \j<=\i) ? 1 : 0}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \small
+      Structures compared:
+      \begin{itemize}
+        \item \textbf{Encoder--decoder}: fully visible encoder, causal decoder, cross-attention. Our A2.
+        \item \textbf{Encoder--decoder, shared}: the same weights in both stacks.
+        \item \textbf{Language model}: one causal stack over input + target. Our A1 and A4.
+        \item \textbf{Prefix LM}: one stack; fully visible over the input, causal over the target. Our A3.
+      \end{itemize}
+      \vspace{1mm}
+      \textbf{Fair comparison}: an encoder--decoder with $L+L$ layers has $2P$ parameters but about the \emph{same cost} $M$ as an $L$-layer LM on input + target, because each token passes through only one stack.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Architecture results}
+  \centering
+  \footnotesize
+      \begin{tabular}{@{}llccccc@{}}
+        \toprule
+        Architecture & Objective & Params & Cost & GLUE & CNNDM & SGLUE\\
+        \midrule
+        \textbf{Encoder--decoder} & Denoising & $2P$ & $M$ & \textbf{83.28} & \textbf{19.24} & \textbf{71.36}\\
+        Enc--dec, shared & Denoising & $P$ & $M$ & 82.81 & 18.78 & 70.73\\
+        Enc--dec, 6 layers & Denoising & $P$ & $M/2$ & 80.88 & 18.97 & 68.42\\
+        Language model & Denoising & $P$ & $M$ & 74.70 & 17.93 & 55.02\\
+        Prefix LM & Denoising & $P$ & $M$ & 81.82 & 18.61 & 68.11\\
+        \midrule
+        Encoder--decoder & LM & $2P$ & $M$ & 79.56 & 18.59 & 64.29\\
+        Language model & LM & $P$ & $M$ & 73.78 & 17.54 & 56.51\\
+        Prefix LM & LM & $P$ & $M$ & 79.68 & 17.84 & 64.86\\
+        \bottomrule
+      \end{tabular}
+  \vspace{2mm}
+  \begin{exampleblock}{Takeaways}
+    \small
+    Encoder--decoder wins. Sharing its weights costs little (83.28 to 82.81) while halving parameters.
+    \textbf{Prefix LM beats the plain LM} by a wide margin, because the input is fully visible. Denoising beats plain LM objectives.
+  \end{exampleblock}
+  {\scriptsize Downstream fine-tuning scores, not next-token perplexity; our Phase 1 measures continuation quality, so the ranking may differ.}
+\end{frame}
+
+\begin{frame}{Unsupervised objectives}
+  \begin{columns}[T]
+    \begin{column}{0.56\textwidth}
+      \footnotesize
+      Variants of BERT-style denoising in the encoder--decoder:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Objective & GLUE & CNNDM & SGLUE\\
+        \midrule
+        BERT-style & 82.96 & 19.17 & 69.85\\
+        MASS-style & 82.32 & 19.16 & 69.28\\
+        \textbf{Replace corrupted spans} & 83.28 & 19.24 & \textbf{71.36}\\
+        Drop corrupted tokens & \textbf{84.44} & \textbf{19.31} & 68.67\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      \small
+      Also tested: corruption rates of 10--50\% and average span lengths of 2--10. Differences were small; 50\% corruption was worst.
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{exampleblock}{Takeaway}
+        \small
+        Most denoising objectives perform \textbf{similarly}. So choose the one with the \emph{shortest targets}, which trains fastest.
+        \vspace{1mm}
+
+        Span corruption with average span length 3 slightly but significantly beat independent token corruption on most non-translation tasks.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Pre-training data: domain and size}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \scriptsize
+      \begin{tabular}{@{}lrccc@{}}
+        \toprule
+        Data set & Size & GLUE & SQuAD & SGLUE\\
+        \midrule
+        C4 & 745 GB & 83.28 & 80.88 & 71.36\\
+        C4, unfiltered & 6.1 TB & 81.46 & 78.78 & 68.04\\
+        RealNews-like & 35 GB & 83.83 & 80.39 & 72.38\\
+        WebText-like & 17 GB & 84.03 & 81.42 & 71.40\\
+        Wikipedia & 16 GB & 81.85 & 81.29 & 68.01\\
+        Wikipedia + books & 20 GB & 83.65 & \textbf{82.08} & \textbf{73.24}\\
+        \bottomrule
+      \end{tabular}
+      \vspace{1mm}
+
+      \textbf{Repeating a small data set} over the same 34B tokens:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Unique tokens & Repeats & GLUE & SGLUE\\
+        \midrule
+        full C4 & 0 & 83.28 & 71.36\\
+        $2^{27}$ & 256 & 82.62 & 69.97\\
+        $2^{23}$ & 4,096 & 76.34 & 59.29\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{Takeaways}
+        \small
+        \begin{itemize}
+          \item \textbf{Cleaning matters}: unfiltered C4 is worse, although 8$\times$ bigger.
+          \item \textbf{In-domain data helps in-domain tasks}. Book text boosted a fiction-based reading task (MultiRC exact match 25.8 to 50.9).
+          \item Heavy repetition hurts; the model memorises.
+        \end{itemize}
+        For us: legal pre-training should help legal tasks. Our budget of about 200M tokens from 4.5B available means \textbf{no repetition} needed.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Fine-tuning strategies and multi-task learning}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \footnotesize
+      Updating only part of the model:
+      \vspace{1mm}
+
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Method & GLUE & CNNDM & EnDe\\
+        \midrule
+        All parameters & \textbf{83.28} & \textbf{19.24} & \textbf{26.98}\\
+        Adapters, $d=32$ & 80.52 & 15.08 & 13.84\\
+        Adapters, $d=512$ & 81.54 & 17.78 & 23.45\\
+        Gradual unfreezing & 82.50 & 18.95 & 26.71\\
+        \bottomrule
+      \end{tabular}
+      \vspace{2mm}
+
+      \small
+      \textbf{Multi-task}: training on a mixture of tasks with various mixing rates never quite matched pre-train-then-fine-tune. Multi-task pre-training followed by fine-tuning was comparable.
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \begin{exampleblock}{For Phases 2--7}
+        \small
+        \begin{itemize}
+          \item Full fine-tuning was best, but most expensive.
+          \item Small adapters struggle on \textbf{generation-heavy} tasks (summarisation, translation); enough capacity is needed.
+          \item Adapters with $d=32$ are fine for classification (GLUE 80.5) but poor for translation (13.8 BLEU).
+        \end{itemize}
+        Expect PEFT gaps to be larger in Phase 6 (summarisation) than in Phases 3--5.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Scaling: how to spend 4$\times$ more compute}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}lccc@{}}
+        \toprule
+        Strategy & GLUE & SGLUE & EnDe\\
+        \midrule
+        Baseline & 83.28 & 71.36 & 26.98\\
+        1$\times$ size, 4$\times$ steps & 85.33 & 74.72 & 27.08\\
+        1$\times$ size, 4$\times$ batch & 84.60 & 74.64 & 27.07\\
+        2$\times$ size, 2$\times$ steps & \textbf{86.18} & 77.18 & \textbf{27.52}\\
+        4$\times$ size, 1$\times$ steps & 85.91 & \textbf{78.04} & 27.47\\
+        4$\times$ ensembled & 84.77 & 71.74 & 28.05\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{exampleblock}{Takeaways}
+        \small
+        \begin{itemize}
+          \item Every option helps.
+          \item A \textbf{bigger model trained for fewer steps} usually beats a smaller model trained longer.
+          \item Ensembles give an independent boost.
+        \end{itemize}
+        For us: within 50--300M parameters and a fixed Colab budget, test a larger model for fewer steps against a smaller one for more steps.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Putting it all together: the T5 models}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \small
+      Final recipe: encoder--decoder, span corruption (average span 3), C4, multi-task pre-training then per-task fine-tuning, and much more compute: over \textbf{1 trillion tokens} in total. Sizes from Small (60M) to 11B.
+      \vspace{1mm}
+
+      \footnotesize
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        Model & CNN/DM ROUGE-2 & CNN/DM ROUGE-L\\
+        \midrule
+        Previous best & 20.30 & 40.63\\
+        T5-Small & 19.56 & 38.35\\
+        T5-Base & 20.34 & 39.40\\
+        T5-Large & 20.68 & 39.75\\
+        T5-11B & \textbf{21.55} & \textbf{40.69}\\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{exampleblock}{Headline results}
+        \small
+        \begin{itemize}
+          \item SuperGLUE: \textbf{88.9}, up from 84.6, close to the human score of 89.8.
+          \item State of the art on many GLUE, SuperGLUE, SQuAD and CNN/DM measures.
+          \item \textbf{Not} state of the art on WMT translation, probably because pre-training was English-only and without back-translation.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Assessment and outlook}
+
+\begin{frame}{What T5 predicts for our Phase-1 study}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    T5 finding & Hypothesis for our capstone\\
+    \midrule
+    Encoder--decoder best for fine-tuning & A2 may transfer best to Phases 2--7, even if not best at continuation\\
+    Prefix LM $\gg$ plain LM & A3 should beat A1 when the prompt is long and informative\\
+    Shared enc--dec nearly as good & Parameter sharing (A3) is a cheap way to get encoder benefits\\
+    Denoising $>$ LM objective downstream & Our models all use LM-style objectives; span corruption is a possible extra experiment\\
+    In-domain data helps & Legal-only pre-training should help legal tasks; test mixing ratios\\
+    Bigger model, fewer steps & Compare 80M and 150M models at equal compute\\
+    Run-to-run noise & Repeat key runs with different seeds\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Strengths and limitations}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Strengths}
+        \small
+        \begin{itemize}
+          \item Very large, carefully controlled study; one variable at a time.
+          \item Measures run-to-run variance.
+          \item Simple unified format for every task.
+          \item Released C4, code and all model checkpoints.
+          \item Clear, practical takeaways.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations}
+        \small
+        \begin{itemize}
+          \item Enormous compute; hard to reproduce outside large labs.
+          \item Factors are studied one at a time, so interactions can be missed.
+          \item English-only pre-training.
+          \item Judged on fine-tuning benchmarks; open-ended generation quality was not the focus.
+          \item Maximum length 512: long documents not studied.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Future research directions (1): from the paper's outlook and after}
+  \small
+  \begin{tabularx}{\textwidth}{@{}lX@{}}
+    \toprule
+    Direction & Details\\
+    \midrule
+    Stronger small models \emph{(paper)} & Distillation, parameter sharing, conditional computation for low-resource settings\\
+    More efficient knowledge extraction \emph{(paper)} & Denoising may be inefficient; ELECTRA (Clark et al., 2020) trains a discriminator instead\\
+    Formalise task similarity \emph{(paper)} & A principled way to choose pre-training data for a target task\\
+    Language-agnostic models \emph{(paper)} & mT5 (Xue et al., 2021) trains T5 on 101 languages\\
+    Instruction tuning & Flan-T5 (Chung et al., 2022) fine-tunes on over 1,800 tasks phrased as instructions\\
+    Better objective mixtures & UL2 (Tay et al., 2023) mixes prefix-LM and several span-corruption denoisers\\
+    Tokenizer-free T5 & ByT5 (Xue et al., 2022) works directly on bytes\\
+    \bottomrule
+  \end{tabularx}
+\end{frame}
+
+\begin{frame}{Future research directions (2): open questions}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Open in general}
+        \small
+        \begin{itemize}
+          \item Which architecture is best when the goal is open-ended generation \emph{and} fine-tuning?
+          \item How factors interact: is the best objective different at large scale?
+          \item Long-input text-to-text models.
+          \item Cheaper ways to reach the same downstream quality.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Open for legal NLP}
+        \small
+        \begin{itemize}
+          \item One text-to-text legal model for all seven phases, using task prefixes.
+          \item Text outputs for span tasks (NER) need exact character offsets, a known weak spot of text-to-text.
+          \item Legal-specific cleaning heuristics, the equivalent of C4 for judgments.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{itemize}
+    \item \textbf{Text-to-text}: every task is input text $\to$ output text, trained with one loss.
+    \item \textbf{C4}: 750 GB of heuristically cleaned web text.
+    \item Controlled findings: encoder--decoder best; prefix LM much better than plain LM; denoising beats LM objectives downstream; objectives are similar, so use short targets; clean and in-domain data help; heavy repetition hurts; full fine-tuning beats adapters; bigger models beat longer training.
+    \item Scaled to 11B parameters: state of the art on many benchmarks, SuperGLUE 88.9 vs human 89.8.
+    \item For us: a template for a controlled architecture study, and concrete predictions for A1--A3.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+  \small
+  Raffel, C., Shazeer, N., Roberts, A., Lee, K., Narang, S., Matena, M., Zhou, Y., Li, W., and Liu, P.\ J.\ (2020). Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer. \emph{Journal of Machine Learning Research}, 21(140):1--67. arXiv:1910.10683.
+  \vspace{3mm}
+
+  {\footnotesize Later work cited: Clark et al.\ (2020) ELECTRA; Xue et al.\ (2021) mT5; Chung et al.\ (2022) Scaling Instruction-Finetuned Language Models (Flan-T5); Xue et al.\ (2022) ByT5; Tay et al.\ (2023) UL2.}
+\end{frame}
+
+\end{document}
