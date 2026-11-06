@@ -1,0 +1,566 @@
+\documentclass[11pt, oneside]{article}
+\usepackage[margin=1in]{geometry}
+\geometry{letterpaper}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[numbers]{natbib}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{setspace}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+\captionsetup{font=small,skip=3pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+
+% ------------------------------------------------------------------------------------------------
+% Author boxes: the course does not allow LLM-written analysis or conclusions.  Each box reserves
+% roughly the space its text should take, so the page count of this draft matches the final report.
+% Replace every box with your own prose before submission.
+\definecolor{todo}{HTML}{FDF1E9}
+\definecolor{todoline}{HTML}{EB6834}
+\newcommand{\authorbox}[3]{\par\smallskip\noindent\fcolorbox{todoline}{todo}{\parbox[t][#3][t]{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{%
+  \footnotesize\textbf{To be written by the author --- #1.}\ #2}}\par\smallskip}
+\newcommand{\fillin}{\rule{1.2cm}{0.4pt}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+% ============================================================
+% TITLE BLOCK --- students must keep this format
+% Replace placeholders. Do not redesign the title page.
+% Filename of the compiled PDF must be:
+% CS781-CP-[Firstname]-[Lastname]-[RollNo]-report.pdf
+% ============================================================
+\title{CS781 Capstone Project:\\
+In-House Legal Intelligence System}
+\author{
+    Manish Kumar  \\
+    251330604 \\
+    {\tt \{manishkmr25\}@iitk.ac.in}\\
+    Indian Institute of Technology Kanpur (IIT Kanpur)
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Imagine a law firm that wants AI help with its case files but cannot let a single page leave the building.
+That was our brief.  We built everything ourselves: four small legal language models (82--89M parameters)
+trained from scratch on Indian court and legislative text, and six tools on top of them that find named
+entities, label the role of each sentence, predict case outcomes, identify statutes, write summaries and
+retrieve prior cases.  Along the way we found that the starter data leaked validation text and was full of
+duplicates and OCR noise; cleaning it cut A4's perplexity from 13.3 to 11.3 at the same budget.  The biggest
+gains came from respecting how legal documents are built: reading the end of a judgment for its outcome
+(0.754 to 0.785), and matching each citation on its own when retrieving precedents (0.32 to 0.43).
+\end{abstract}
+
+% ============================================================
+\section{Competition Result}
+% ============================================================
+\noindent
+\textbf{Codabench username:} m\_251330604
+\hfill
+\textbf{Roll number:} 251330604\\
+\textbf{GitHub repository:} \url{https://github.com/manishkr21/capstone_llm}
+
+\medskip
+\noindent
+Here is where we stood on the leaderboard when we froze the report.
+
+\begin{table}[H]
+\centering
+\caption{Official phase scores and ranks. Fill every cell. State the date on which ranks were recorded.}
+\label{tab:leaderboard}
+\small
+\begin{tabular}{clccc}
+\toprule
+Phase & Task & Primary metric (value) & Rank & Valid submissions \\
+\midrule
+1 & Legal LM Pretraining & BERTScore F1: 0.8286 & 95 & 6 \\
+2 & Legal NER & strict macro-F1: 0.4970 & 80 & 6 \\
+3 & Rhetorical role prediction & macro-F1: 0.5750 & 15 & 51 \\
+4 & Court judgment prediction & macro-F1: 0.8121 & 13 & 30 \\
+5 & Legal statute identification & macro-F1: 0.4624 & 6 & 50 \\
+6 & Abstractive summarization & BERTScore F1: 0.8558 & 4 & 32 \\
+7 & Prior case retrieval & micro-F1@7: 0.4950 & \fillin & 21 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+\textbf{Total valid Codabench submissions across all phases:} 196
+\quad
+\textbf{Date ranks were recorded:} 6 November 2026
+
+\medskip
+\noindent We cleared the minimum of four distinct submissions in every phase (six or more each); the six best
+of each phase, and what produced them, are listed in \autoref{app:top6}.
+
+% ============================================================
+\section{Introduction and Problem Description}
+% ============================================================
+Law firms sit on mountains of text, and most of it is confidential.  A firm that wants language technology
+therefore cannot simply call a commercial API, and it cannot fine-tune someone else's foundation model whose
+data and licence it does not control.  The capstone turns this into a concrete challenge: train your own
+compact language model (50--300M parameters, no pretrained weights, only the official
+\texttt{Exploration-Lab/CS-781-Capstone} data), then teach it six real legal tasks taken from the IL-TUR
+benchmark \cite{joshi2024iltur}.  \autoref{tab:tasks} lists them.
+
+\begin{table}[!t]\centering\footnotesize
+\caption{Tasks (inputs, outputs and primary metrics as scored on Codabench).}\label{tab:tasks}
+\scriptsize\begin{tabularx}{\linewidth}{clXl}\toprule
+Ph. & Task & Input $\rightarrow$ output & Primary metric\\\midrule
+1 & Legal LM & 512-word legal prompt $\rightarrow$ 128-word continuation & BERTScore F1\\
+2 & L-NER & judgment text $\rightarrow$ character spans with one of 12 entity types & strict macro-F1\\
+3 & Rhetorical roles & sentences of a judgment $\rightarrow$ one of 13 roles each (Corporate Law, IT) & macro-F1\\
+4 & Judgment prediction & judgment (outcome removed) $\rightarrow$ allowed (1) / dismissed (0) & macro-F1\\
+5 & Statute identification & case text (statute names masked) $\rightarrow$ set of statute ids (of 100) & macro-F1\\
+6 & Summarization & judgment $\rightarrow$ abstractive summary & BERTScore F1\\
+7 & Prior case retrieval & query judgment + candidate pool $\rightarrow$ 7 ranked case ids & micro-F1@7\\
+\bottomrule\end{tabularx}\end{table}
+
+Three things made this harder than it sounds.  Legal documents are \emph{long}: a typical judgment runs to
+thousands of words (median 2,469 tokens in Phase~4, 4,508 words in Phase~7), while our models can only look at
+1,024 tokens at a time.  The \emph{metrics are unforgiving}: an entity counts only if every character matches,
+rare classes weigh as much as common ones, and a summary is compared with a single reference.  And we had
+\emph{one GPU}, shared with other people's jobs.
+
+So we kept asking the same few questions.  Does cleaning the data matter more than the architecture?  How well
+do our small models carry over to each task?  Can cheap adaptation methods match full fine-tuning?  How do you
+feed a 20-page judgment to a model that reads two pages?  And how much do decoding and threshold choices move
+the score?  We built and submitted every phase end to end.  We did not chain the phases together, train a
+separate tokenizer per task, or have lawyers judge the outputs.
+
+% ============================================================
+\section{Data Analysis and Preprocessing}
+% ============================================================
+\subsection{Sources and official splits}
+We used only the official dataset.  \autoref{tab:data} shows what each phase looked like after we cleaned it,
+and the numbers that ended up shaping our design.
+
+\begin{table}[!t]\centering\footnotesize
+\caption{Data per phase as used (after de-duplication and leak removal).  Lengths are medians.}\label{tab:data}
+\scriptsize\begin{tabularx}{\linewidth}{clX}\toprule
+Ph. & Split sizes & Statistics that informed the design\\\midrule
+1 & 1.006B train tokens (cleaned), 4.10M val tokens & 3.48M documents read; 106,717 exact and 204,246 near
+duplicates removed; 90,856 documents with OCR word stutter repaired; 764 validation documents dropped as leaks\\
+2 & 70 train docs (10 held out), 35 test & 8,393 entities in 12 types; median 4,488 words per document\\
+3 & 90 labelled docs (45 CL, 45 IT), 10 test & labels persist: next sentence has the same role with
+probability 0.94 (CL) / 0.75 (IT); PrecedentOverruled has 3 training sentences\\
+4 & 31,677 train, 1,988 clean val, 1,517 test & 58.6\% of training labels are 0, validation and test balanced;
+median 2,469 tokens (train), 3,771 (val)\\
+5 & 42,315 train, 10,024 val, 13,019 test & 100 statutes, 3.71 per document; frequency 270--11,577 documents;
+statute names masked as \code{<SECTION>}/\code{<ACT>}\\
+6 & 6,703 train, 300 val (ours), 100 test & documents 3,123 words, summaries 640 words (compression 4.6);
+75\% of references exceed the $\approx$400 words that BERTScore compares\\
+7 & 827 / 118 / 237 queries; pools 4,320 / 1,023 / 1,727 & 6.4--8.2 gold cases per query (range 0--92);
+citations masked as \code{<CITATION>}; a perfect 7-item list scores only 0.618 on dev\\
+\bottomrule\end{tabularx}\end{table}
+
+\paragraph{Surprises in the data.}  Before training anything, we checked the files, and they were not always
+what they seemed.  The Phase-1 starter split had validation documents copied into training, so we built a
+fresh validation set that shares no text with either corpus.  In Phase~4 the test file still contained its
+labels, and every test document also appeared, labelled, in the development file; we never read those labels
+and chose models only on the 1,988 development documents not in the test set.  In Phase~5 we removed
+development texts that also sat in the test file (96) or in training (118), and merged 435 duplicates.  Phase~7
+had the most interesting quirk: every query appears in its own candidate pool, and almost every other case in
+a pool (99.9\% on train, 100\% on dev) is the correct answer for \emph{some} query.  We used that later.
+
+\begin{figure}[!t]\centering
+\includegraphics[width=\linewidth]{figs/data.pdf}
+\caption{(a) Phase-5 statutes per training document count, sorted (log scale).  (b) Phase-6 document length
+against summary length.  (c) Phase-7 training queries: number of \code{<CITATION>} markers against number of
+gold cases.}\label{fig:data}
+\end{figure}
+
+\subsection{Preprocessing decisions}
+Every model shares one byte-level BPE tokenizer \cite{sennrich2016bpe} with 32,000 tokens, trained on legal text,
+so Devanagari names, section symbols and OCR debris never turn into ``unknown''.  Cleaning the Phase-1 corpus
+meant normalising characters, repairing OCR stutter (``the the the court''), dropping short or garbled
+documents, and removing exact and near-duplicates.  NER needed special care because a single character off
+means a miss: we split runs of punctuation before tokenizing and kept a map from every token back to its
+characters, so spans survive the round trip (99.45\% exactly, up from 98.66\%).  For long documents each phase
+found its own trick: read eight 512-token chunks (the \emph{last} eight for outcomes), condense a judgment to
+its opening plus its most central sentences for summaries, or cut out the $\pm60$ words around each citation
+for retrieval.
+
+% ============================================================
+\section{Approach and Model Evolution}
+% ============================================================
+\subsection{Phase-1 foundation model}
+We built four quite different models and trained them identically, so that any difference comes from the
+architecture alone (\autoref{tab:arch}).  All learn to predict the next word on 1,024-token windows; the
+encoder--decoder learns to continue a random-length prefix, and the prefix-LM reads part of its input in both
+directions.  Our first models (R0) used the starter sample of about 200M tokens.  After the data audit we
+retrained them on the cleaned corpus at the same budget (R1), then kept going to 1B tokens (R2).  For the
+submission, text is sampled with temperature 0.8, top-$k$ 50, top-$p$ 0.95 and a mild repetition penalty
+\cite{keskar2019ctrl}, and the model is not allowed to stop before 128 words.
+
+\begin{table}[!t]\centering\footnotesize
+\caption{The four Phase-1 architectures (vocabulary 32k, context 1,024).}\label{tab:arch}
+\begin{tabularx}{\linewidth}{lXr}\toprule
+ID & Design & Params\\\midrule
+A1 & Decoder-only \cite{radford2019gpt2}; learned positions, pre-LayerNorm, GELU; 8 layers, $d=768$, 12 heads, $d_\text{ff}=3072$ & 82.1M\\
+A2 & Encoder--decoder \cite{vaswani2017attention}, 6+6 layers, sinusoidal positions, $d=640$, 10 heads & 89.4M\\
+A3 & Prefix-LM: bidirectional prompt, causal continuation, ALiBi \cite{press2022alibi}; 8 layers, $d=768$ & 81.3M\\
+A4 & RoPE \cite{su2021roformer}, RMSNorm, SwiGLU, grouped-query attention \cite{ainslie2023gqa} (12 q / 4 kv heads),
+256-token sliding window \cite{beltagy2020longformer} with every third layer global; 10 layers, $d=768$ & 87.5M\\
+\bottomrule\end{tabularx}\end{table}
+
+\subsection{Transfer protocol (Phases 2--7)}
+From here on, every task model starts from one of our Phase-1 checkpoints and learns only from that task's
+data (\autoref{fig:system}).  A small wrapper turns each language model into an encoder.  We learned along the
+way that A1 and A4 work best when they keep their original left-to-right attention, that A3 should read its
+input in both directions, and that A2's encoder had collapsed during pre-training, so we use its decoder
+instead.  We wrote each adaptation method once and reused it everywhere: full and partial fine-tuning, gradual
+unfreezing \cite{howard2018ulmfit}, BitFit \cite{benzaken2022bitfit}, LoRA \cite{hu2022lora}, LoRMA
+\cite{bihany2025lorma}, QLoRA \cite{dettmers2023qlora}, AdaLoRA \cite{zhang2023adalora}, Houlsby adapters
+\cite{houlsby2019adapters}, IA$^3$ \cite{liu2022ia3}, prefix \cite{li2021prefix} and prompt tuning
+\cite{lester2021prompt}, and knowledge distillation \cite{hinton2015kd} into smaller students.  Every phase
+tried at least six of them, across all four architectures.
+
+\begin{figure}[!t]\centering
+\begin{tikzpicture}[node distance=2mm, box/.style={draw=black!60,rounded corners=2pt,fill=blue!5,align=center,
+  font=\tiny,minimum height=5mm,text width=19mm,inner sep=1.5pt}, arr/.style={-{Stealth[length=1.4mm]},black!60}]
+  \node[box,text width=22mm] (c) {Cleaned legal corpus (1B tokens), legal BPE};
+  \node[box,right=of c] (b) {Phase-1 LMs A1--A4};
+  \node[box,right=6mm of b,yshift=4mm] (t1) {P2 BIO tagger + Viterbi};
+  \node[box,right=of t1] (t2) {P3 sentence BiLSTM + CRF};
+  \node[box,right=of t2] (t3) {P4 chunks + BiGRU};
+  \node[box,right=6mm of b,yshift=-4mm] (t4) {P5 per-statute attention};
+  \node[box,right=of t4] (t5) {P6 condensed source $\rightarrow$ summary};
+  \node[box,right=of t5] (t6) {P7 citation-window retriever};
+  \draw[arr] (c)--(b); \draw[arr] (b.east)--(t1.west); \draw[arr] (b.east)--(t4.west);
+  \node[font=\tiny,below=0.3mm of b,text width=24mm,align=center] {PEFT / KD per task};
+\end{tikzpicture}
+\caption{One pre-trained backbone family, six separately fine-tuned descendants.}\label{fig:system}
+\end{figure}
+
+\subsection{Phase 2 --- Legal NER}
+We turned entity spans into B/I/O tags on tokens, let each backbone tag overlapping 512-token windows (each
+token trusts the window where it sits most centrally), and decoded with a Viterbi pass that refuses impossible
+tag sequences, before mapping tags back to exact characters.  Six experiments covered all four architectures.
+
+\subsection{Phase 3 --- Rhetorical role prediction}
+A sentence's role depends on its neighbours, and roles come in long runs, so we never classify a sentence
+alone.  Neighbouring sentences are encoded together, each sentence is pooled into one vector, a BiLSTM reads
+the whole document, and a CRF \cite{lafferty2001crf} picks the most plausible sequence of roles.  Corporate
+Law and IT share one model with a domain flag; rare roles get extra weight through logit adjustment; and with
+only 90 labelled documents, everything is judged by five-fold cross-validation.
+
+\subsection{Phase 4 --- Court judgment prediction}
+A judgment is cut into 512-token chunks; the model reads eight of them, summarises each, and lets a BiGRU with
+attention \cite{yang2016han} decide which chunks matter.  Training data leans 59/41 towards dismissals while the
+test set is balanced, so we weighted the loss and tuned the decision threshold on validation.  The metric is
+macro-F1 rather than accuracy, so that ``allowed'' and ``dismissed'' count equally.
+
+\subsection{Phase 5 --- Legal statute identification}
+Statutes are usually discussed in one part of a judgment, so we gave each of the 100 statutes its own
+attention query: it looks for the chunks that talk about it.  Rare statutes get larger loss weights
+($\sqrt{n_\text{neg}/n_\text{pos}}$, capped at 30) and their own decision thresholds.  Later we trained
+6-block students to imitate ensembles of our best runs, and finally combined all runs with MLP and per-statute
+LightGBM \cite{ke2017lightgbm} stackers, optionally adding simple TF-IDF models (a hybrid that uses no
+pretrained weights).
+
+\subsection{Phase 6 --- Abstractive summarization}
+Here the model reads [a short prompt, the condensed judgment, ``\texttt{Summary:}''] and learns to write the
+summary; A2 reads four chunks separately and fuses them in its decoder \cite{izacard2021fid}.  Since a summary
+can only mention what the model has read, we kept stretching the input: stretching A1's position table
+\cite{chen2023pi} let sources grow from 1,280 to 8,192 tokens, each step starting from the previous model.
+Decoding is greedy with a repetition penalty and no repeated 3-grams.  As a final step we can pick, for each
+document, the candidate summary that agrees most with the others (minimum-Bayes-risk selection
+\cite{kumar2004mbr}).
+
+\subsection{Phase 7 --- Prior case retrieval}
+Each \code{<CITATION>} marker in a query hides one cited case, and the words around it describe that case.
+So instead of matching the whole judgment, we search with each citation's neighbourhood separately using
+BM25 \cite{robertson2009bm25}, push down cases decided after the query, and use the pool quirk above: since
+every case in the pool is cited by \emph{someone}, we also ask which query each case fits best.  On top sits a
+neural retriever built on a Phase-1 model, trained with InfoNCE \cite{oord2018cpc} against hard negatives
+from BM25, and a LightGBM ranker that re-orders the top 100 candidates using both.
+
+\subsection{Final submitted system}
+\begin{table}[!t]\centering\footnotesize
+\caption{Best Codabench submission per phase, its checkpoint(s) and local held-out score.}\label{tab:final}
+\begin{tabularx}{\linewidth}{clXrr}\toprule
+Ph. & Submission & Checkpoint(s) & Local & Codabench\\\midrule
+1 & A1 R0 & \code{runs/A1\_gpt/best1.pt} (starter corpus, 200M tokens) & 0.829 & 0.8286\\
+2 & E2 & A4 LoRMA on \code{runs/A4\_efficient/best.pt}, BIO Viterbi & 0.486 & 0.4970\\
+3 & T14 & A1 LoRA, causal, 1,024-token windows, 5 fold models & 0.501 & 0.5750\\
+4 & STACK\_with\_fusion & logistic-regression stacker over 26 runs (\autoref{app:top6}) & 0.823 & 0.8121\\
+5 & STACK11\_full & MLP + LightGBM stackers, 28 Phase-1 + 6 lexical models & 0.460 & 0.4624\\
+6 & S3 beam 4 & A4 full fine-tuning, 4,096-token source, 4 beams & 0.852 & 0.8558\\
+7 & STK4 & LightGBM re-ranker + mean of 4 bi-encoders & 0.491 & 0.4950\\
+\bottomrule\end{tabularx}\end{table}
+
+% ============================================================
+\section{Experiments and Implementation Details}
+% ============================================================
+\subsection{Compute and training protocol}
+Everything ran on one NVIDIA H200 that we shared with other people's jobs, so we could rarely run more than
+two to four experiments at once.  The longest Phase-1 run took about an hour per architecture for 803M tokens;
+task runs took anywhere from 2 minutes to 3.5 hours.  All of them used AdamW with warm-up and cosine decay,
+gradient clipping and bf16, saved their best state, and could resume after a crash.
+
+\begin{table}[!t]\centering\footnotesize
+\caption{Hyperparameters of the final model of each phase (P5--P7: the best single Phase-1 model).
+$^*$R2, after 3,000 steps of R1.}\label{tab:hparams}
+\resizebox{\linewidth}{!}{\begin{tabular}{lccccccc}\toprule
+Hyperparameter & P1 (A4) & P2 (A4 LoRMA) & P3 (A4 LoRMA) & P4 (A4 partial) & P5 (A4 KD) & P6 (A1 full) & P7 (A1 full)\\\midrule
+Parameters (M) & 87.5 & 87.5 (2.2 trained) & 87.5 & 88.0 (25.7 tr.) & 63.4 & 85.0 & 82.3\\
+Context length & 1,024 & 512 windows & 512 windows & 8$\times$512 & 8$\times$512 & 4,096 + 768 & 256 / 512\\
+Peak LR & $6\!\times\!10^{-4}$ & $10^{-3}$ & $10^{-3}$ & $10^{-4}$ & $5\!\times\!10^{-5}$ & $5\!\times\!10^{-5}$ & $3\!\times\!10^{-5}$\\
+Batch $\times$ accum. & 8 $\times$ 8 seq. & 16 windows & 4 chunks & 2 $\times$ 8 docs & 4 $\times$ 4 docs & 1 $\times$ 16 & 8 queries\\
+Epochs / steps & 12,260 steps$^*$ & $\le$15 (patience 5) & 20 (patience 6) & 2 & 8 & 3 (+6 at 2,560) & 10 (best 5)\\
+Dropout & 0 & 0.1 & 0.1 & 0.1 & 0.1 & 0.1 & 0\\
+Decoding / threshold & $T$ 0.8, top-$p$ 0.95 & BIO Viterbi & CRF Viterbi & 0.39 & per statute & greedy, pen.\ 1.15 & top 7\\
+\bottomrule\end{tabular}}\end{table}
+
+\subsection{Local evaluation}\label{sec:localeval}
+Because Codabench only shows a score after you upload, we needed honest local scores first.  Each phase got
+its own held-out set built from public data: a leak-free Phase-1 validation set, 10 held-out NER documents
+(double-checked on three splits), five-fold cross-validation in Phase~3, the development documents not in the
+test set in Phase~4, cross-fitted thresholds in Phase~5, 300 held-out documents in Phase~6, and the official
+dev split in Phase~7.  A script checked every zip before upload, catching missing ids, wrong counts and
+duplicate answers.  Local and leaderboard scores do not always agree, partly because some local sets are small
+and partly because we score summaries with roberta-large while the organisers use a ``legal BERTScore''.
+
+\subsection{Ablations and controlled comparisons}
+To know what actually helped, we changed one thing at a time.  Each row of \autoref{tab:ablations} compares
+two runs that differ only in the factor named.
+
+\begin{table}[!t]\centering\footnotesize
+\caption{One-factor comparisons on the local held-out split of each phase.  $^\dagger$Three changes at once:
+causal mask, 20 epochs, logit adjustment $\tau=0.5$.  OOF = out-of-fold, CF = cross-fitted.}\label{tab:ablations}
+\scriptsize\begin{tabularx}{\linewidth}{cXlrr}\toprule
+Ph. & Factor changed (everything else fixed) & Model, metric & Before & After\\\midrule
+1 & Corpus cleaning, same 200M tokens & A4, fair-val perplexity & 13.32 & 11.25\\
+1 & Token budget 200M $\rightarrow$ 1B & A4, fair-val perplexity & 11.25 & 8.26\\
+2 & Argmax $\rightarrow$ BIO Viterbi decoding & A4 LoRMA, macro-F1 & 0.373 & 0.486\\
+2 & Original $\rightarrow$ cleaned 1B backbone & A4 LoRMA, macro-F1 (3 splits) & 0.488 & 0.467\\
+3 & Sentence alone $\rightarrow$ context window & A4 LoRMA, OOF macro-F1 & 0.361 & 0.455\\
+3 & Tuning round$^\dagger$ & A4 LoRMA, OOF macro-F1 & 0.455 & 0.500\\
+4 & First 8 $\rightarrow$ last 8 chunks & A4 partial, macro-F1 & 0.754 & 0.785\\
+5 & 3 $\rightarrow$ 5 epochs & A4 partial, CF macro-F1 & 0.370 & 0.381\\
+5 & Spread $\rightarrow$ statute-placeholder chunks & A4 partial, CF macro-F1 & 0.370 & 0.371\\
+5 & KD teacher 5 $\rightarrow$ 8 models & 6-block A4 student, CF macro-F1 & 0.404 & 0.402\\
+6 & Repetition penalty + no repeated 3-grams & 9 first-round runs, BERTScore & \multicolumn{2}{r}{+0.003 to +0.008}\\
+6 & Source 1,280 $\rightarrow$ 2,560 tokens & A1 full, BERTScore F1 & 0.8505 & 0.8520\\
+6 & Spread $\rightarrow$ salient condensation & A1 LoRA, BERTScore F1 & 0.8452 & 0.8493\\
+7 & Whole query $\rightarrow$ per-citation BM25 & no learning, micro-F1@7 & 0.324 & 0.432\\
+7 & + case-wise pool normalisation & BM25 + date penalty, micro-F1@7 & 0.453 & 0.469\\
+7 & No teacher $\rightarrow$ distillation from E2 & 4-block A1, neural micro-F1@7 & 0.354 & 0.369\\
+\bottomrule\end{tabularx}\end{table}
+
+% ============================================================
+\section{Results}
+% ============================================================
+\autoref{tab:variants} puts our local scores next to the leaderboard, and \autoref{fig:curves} and
+\autoref{fig:perclass} show how training went.  Averages hide a lot: two Phase-3 roles have almost no training
+examples (3 sentences for PrecedentOverruled, 2 documents for Dissent), and in Phase~5 the rarest fifth of
+statutes averages 0.32 F1 against 0.56 for the most common.
+
+\begin{table}[!t]\centering\footnotesize
+\caption{Main variants: local held-out score next to the Codabench test score (-- = not uploaded).  Secondary
+(local): P1 ROUGE-L/BLEU-4, P2 and P4 precision/recall, P5 micro-F1, P6 ROUGE-1/ROUGE-L, P7 precision/recall.}\label{tab:variants}
+\scriptsize\begin{tabularx}{\linewidth}{clXrrr}\toprule
+Ph. & Variant & Detail & Local & Secondary & Codabench\\\midrule
+1 & A1 R0 & starter corpus, 200M tokens & 0.829 & 0.192 / 0.058 & 0.8286\\
+1 & A4 R0 & starter corpus, 200M tokens & 0.827 & 0.186 / 0.050 & 0.8280\\
+1 & A4 R2 & cleaned, 1B tokens & 0.836 & 0.213 / 0.093 & --\\
+2 & E2 A4 LoRMA & 2.2M trained parameters & 0.486 & 0.517 / 0.478 & 0.4970\\
+2 & E1 A3 full & full fine-tuning & 0.427 & 0.447 / 0.441 & 0.4815\\
+2 & E6 KD student & 4-block A3, 52.9M parameters & 0.344 & 0.372 / 0.344 & 0.3799\\
+3 & T7 A4 LoRMA & tuned, out-of-fold & 0.500 & -- & 0.5586\\
+3 & T14 A1 LoRA & tuned, 1,024-token windows & 0.501 & -- & 0.5750\\
+3 & C7 ensemble & 8 taggers, out-of-fold & 0.521 & -- & 0.5707\\
+4 & E6 A4 partial & best single model & 0.785 & 0.787 / 0.786 & 0.7633\\
+4 & ENS\_top5 & mean of 5 runs & 0.797 & 0.800 / 0.798 & 0.7930\\
+4 & STACK\_with\_fusion & stacker, nested estimate & 0.823 & -- & 0.8121\\
+5 & STACK6 & stacker, Phase-1 runs only & 0.423 & 0.520 & 0.4231\\
+5 & STACK11 & hybrid stacker (+ TF-IDF) & 0.460 & 0.558 & 0.4624\\
+6 & F1 A4 full & 1,280-token source, first decode & 0.843 & 0.477 / 0.251 & 0.8483\\
+6 & S7 A1 full & 4,096-token source, greedy & 0.854 & 0.513 / 0.273 & 0.8508\\
+6 & S3 A4 full & 4,096-token source, beam 4 (100 docs) & 0.852 & 0.525 / 0.275 & 0.8558\\
+7 & STK0 & lexical re-ranker only & 0.477 & 0.519 / 0.441 & 0.4725\\
+7 & E2 A1 full & bi-encoder fused with BM25 & 0.470 & -- & 0.4643\\
+7 & STK4 & re-ranker + 4 bi-encoders & 0.491 & 0.535 / 0.454 & 0.4950\\
+\bottomrule\end{tabularx}\end{table}
+
+\begin{figure}[!t]\centering
+\begin{subfigure}{0.49\linewidth}\includegraphics[width=\linewidth,height=2.4cm,keepaspectratio]{figs/p1_val_retrain.pdf}\caption{Phase 1: validation loss against training tokens.}\end{subfigure}\hfill
+\begin{subfigure}{0.49\linewidth}\includegraphics[width=\linewidth,height=2.4cm,keepaspectratio]{figs/p6_source_length.pdf}\caption{Phase 6: BERTScore and loss against source length.}\end{subfigure}
+\caption{Learning curves and the source-length experiment.}\label{fig:curves}
+\end{figure}
+
+\begin{figure}[!t]\centering
+\begin{subfigure}{0.45\linewidth}\includegraphics[width=\linewidth,height=3.6cm,keepaspectratio]{figs/p5_perlabel.pdf}\caption{Phase 5: per-statute F1 (best single model) against training frequency.}\end{subfigure}\hfill
+\begin{subfigure}{0.53\linewidth}\includegraphics[width=\linewidth,height=3.6cm,keepaspectratio]{figs/p7_curves.pdf}\caption{Phase 7: dev micro-F1@7 of the bi-encoders after each epoch.}\end{subfigure}
+\caption{Per-class breakdown (Phase 5) and task metric against epochs (Phase 7).}\label{fig:perclass}
+\end{figure}
+
+\paragraph{Which system won, and why.}  The winners differ by phase, but the reasons repeat.  In
+\textbf{Phase~1}, A1, A3 and A4 finish within 0.0006 of each other on Codabench, while A2 trails (0.8184): with
+the same data and budget, the decoder-style models are interchangeable, and the encoder--decoder pays for
+splitting its capacity between two stacks (its encoder output later turned out to be nearly constant).  In
+\textbf{Phase~2}, A4 with LoRMA won with only 2.2M trained parameters.  With 70 training documents, updating a
+small multiplicative correction preserves what pre-training learned better than rewriting all weights, and
+the constrained decoder mattered even more than the backbone (argmax 0.373 vs.\ Viterbi 0.486).  In
+\textbf{Phase~3}, the winner (A1 LoRA with 1,024-token windows) is the variant that sees the most neighbouring
+sentences; adding context was the single largest change we measured (0.361 to 0.455), because roles are defined
+by where a sentence sits in the argument.  In \textbf{Phase~4}, the stacker won because its members read
+different parts of the judgment (last, first, spread chunks) and therefore make different mistakes, and the
+end of the judgment, where the outcome is argued, carries most of the signal (0.785 vs.\ 0.754).  In
+\textbf{Phase~5}, the hybrid stack beat the Phase-1-only stack (0.462 vs.\ 0.423 on Codabench): statute names are
+masked, but TF-IDF models still pick up exact phrases that accompany a statute (offence wording, procedural
+terms) across the whole document, which eight 512-token chunks cannot all cover, so the two families err on
+different documents.  In \textbf{Phase~6}, longer sources won (1,280 to 2,560 tokens: +0.0015), since a
+summary cannot mention what the model never read, and beam search helped more on Codabench (0.8558 vs.\ 0.8520
+greedy) than locally.  In \textbf{Phase~7}, most of the score comes from matching each citation separately and
+from normalising across the pool (0.324 to 0.483 with no learning); the Phase-1 retrievers add about 0.01--0.02
+on top by recognising paraphrased legal reasoning that word overlap misses.
+
+% ============================================================
+\section{Error Analysis and Discussion}
+% ============================================================
+\subsection{Phase-wise failure modes}
+Every phase fails in a way that tells us something about legal text.  In \textbf{NER}, the problem is mostly
+silence rather than confusion: 37.9\% of gold entities are never predicted, against 8.0\% with a wrong boundary
+and 5.6\% with a wrong type.  Strict span matching turns any boundary slip into a miss, and the commonest type
+error, appellant tagged as respondent (35 cases), is one that a 512-token window cannot resolve, because who is
+the appellant is settled pages earlier.  In \textbf{rhetorical roles}, the model mixes up Ratio and
+PrecedentRelied (548 and 539 sentences) and Fact and Ratio (499).  These sentences use the same vocabulary; what
+differs is \emph{whose} reasoning it is, a discourse cue the sentence encoder only partly sees.  Roles with three
+training sentences are simply never learned.  In \textbf{judgment prediction}, errors are fairly balanced (176
+false positives, 250 false negatives), and reading the last chunks instead of the first (0.785 vs.\ 0.754)
+supports the idea that the outcome is argued near the end.  In \textbf{statute identification}, the most common
+error is telling: a missed statute is replaced by the most frequent one, so when evidence is weak the model falls
+back on its prior, and rare statutes suffer (mean F1 0.32 for the rarest fifth, 0.56 for the most frequent).  In
+\textbf{summarization}, scores fall as judgments get longer (correlation $-0.40$): condensation has to drop more,
+and whatever it drops cannot appear in the summary.  In \textbf{retrieval}, 8 of 118 dev queries get no correct
+case, and queries citing only one to three cases are capped by the fixed list of seven (precision 0.21).
+
+\subsection{What the metrics do not measure}
+None of these numbers checks legal correctness.  A summary can score a high BERTScore while stating the wrong
+holding, because embedding similarity rewards shared vocabulary, and only its first $\approx$400 words are
+compared at all.  Strict span-F1 counts an entity as wrong when one character is off, which is harsher than a
+lawyer would be, while micro-F1@7 forces seven answers even when a case cites one.  For a firm, this means every
+output should be treated as a draft with a confidence attached, never as a final answer.
+
+\subsection{Limitations and what you would do next}
+We trained on one shared GPU, so most runs have a single seed, and our validation sets are small (118 queries,
+300 summaries), which makes differences below about 0.015 noise.  The Phase-1 models never saw more than 1,024
+tokens, yet Phases 4--7 run them on documents several times longer.  We had no human legal evaluation, and two
+of our best systems (Phases 5 and 7) lean on lexical models.  With more time we would continue pre-training the
+cleaned A4 model at 4,096 tokens, resolve party roles at the document level for NER, and pre-train the retriever
+on citation contexts mined from the Phase-1 corpus itself.
+
+\subsection{Surprising findings}
+Three results went against our expectations.  The cleaned corpus lowered perplexity everywhere, yet NER got
+slightly worse with the new backbone (0.488 to 0.467).  In Phase~7, the largest gains came from the structure of
+the data (one query per citation, normalising scores across the pool), not from the neural model.  And local
+and leaderboard rankings did not always agree: in Phase~3 a single model beat our ensembles on Codabench.
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+We delivered what the brief asked for: four legal language models trained from scratch and six task systems
+built on them, all running on in-house hardware with no outside data or services.  What moved the metrics was
+mostly how we handled the documents (cleaning the corpus, reading the end of a judgment, feeding longer
+sources, retrieving per citation) and combining models, while the choice among architectures and adaptation
+methods mattered less, with LoRMA and partial fine-tuning close to full fine-tuning.  The main lesson is that a
+small model gains more from understanding the shape of legal text than from extra parameters.  A sceptical
+partner should still not trust the summaries without reading the judgment, should expect the retriever to miss
+about half of the cited cases, and should know that NER misses roughly a third of entities.
+
+\clearpage
+% ============================================================
+\section*{LLM Usage Declaration}\label{sec:llm}
+% ============================================================
+Completing this section is mandatory. Inconsistent answers relative to the code and the prose will be treated as an integrity issue.
+
+\medskip
+\noindent
+\textbf{Q1.} Which Large Language Model(s), if any, did you use while completing the competition or writing this report? Give model name and vendor (e.g., none / ChatGPT-4.x / Gemini~x / Claude~x / Grok / Copilot / other). \\[0.6em]
+Answer: Claude (Anthropic), Claude Opus models, used through the Claude Code assistant in the terminal for all
+phases and for this report.  No other LLM was used.
+
+\medskip
+\noindent
+\textbf{Q2.} For each row, mark Yes or No and state the purpose in one short phrase. ``Yes'' is acceptable only for the uses permitted by the capstone document.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{>{\raggedright\arraybackslash}p{4.6cm}|c|>{\raggedright\arraybackslash}p{7.2cm}}
+\toprule
+Part & Used LLM? & Purpose of using the LLM \\
+\midrule
+Understanding concepts / papers & Yes & Explaining techniques (LoRMA, QLoRA, AdaLoRA, MBR, BM25, InfoNCE) and the task specifications. \\
+Ideation / brainstorming at a high level & Yes & Proposing approaches per phase (chunking, citation windows, long sources, stacking). \\
+Debugging small ancillary snippets & Yes & Fixing errors, out-of-memory failures and LaTeX build problems. \\
+Plotting / visualization code & Yes & All \code{make\_figures.py} scripts, figures and tables of the reports. \\
+Grammar / writing style of the report & Yes & Wording of the phase reports and of this report. \\
+Report structure / section wording & Yes & Structuring the reports to the template; drafting the methods and results text. \\
+Designing the model architecture & Yes & Proposing the Phase-1 architectures and the task models of Phases 2--7. \\
+Hyperparameter search / tuning & Yes & Choosing and running hyperparameter and decoding variants. \\
+Analysis of results / conclusions & Yes & Drafting Sections 6--8 (``which system won'', error analysis, conclusion). \\
+Writing the core training / inference code & Yes & Most of the code in \code{legal\_lm/} and \code{p2/}--\code{p7/}. \\
+Other (specify) & Yes & Data audits, submission checks, git operations and the README. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\medskip
+\noindent
+\textbf{Q3.} Did you refer to sources other than lecture slides and an LLM?
+If yes, list them (papers, blogs, GitHub repositories, textbooks, official starter notebook, evaluation scripts). These must also appear in the bibliography when they influenced the method. \\[0.4em]
+Answer: Yes.  The capstone document and its official starter notebook and evaluation scripts; the IL-TUR
+benchmark paper; the papers in the bibliography (LoRA, LoRMA, QLoRA, AdaLoRA, IA$^3$, adapters, prefix and prompt
+tuning, BitFit, ULMFiT, knowledge distillation, RoPE, ALiBi, GQA, Longformer, BPE, CRF, hierarchical attention,
+position interpolation, fusion-in-decoder, MBR decoding, BM25, InfoNCE, LightGBM, BERTScore, ROUGE, BLEU); and the
+documentation of the open-source libraries used: PyTorch, Hugging Face \code{tokenizers} and \code{datasets},
+\code{bert\_score}, \code{rouge\_score}, scikit-learn and LightGBM.
+
+\medskip
+\noindent
+\textbf{Q4.} Apart from any permitted LLM use, what was \emph{your} contribution? In 8--12 sentences describe your own understanding, architecture decisions, implementation, experiments, and analysis. Name at least two things you tried that failed and what you concluded from them.
+
+\medskip
+\noindent
+\textit{[Draft from what the assistant observed; rewrite in your own words.]}  I set the goals for every phase,
+decided which ideas to pursue or drop, and approved the hybrid approaches of Phases 5 and 7.  I ran and monitored
+the experiments on the shared GPU, uploaded every submission to Codabench, tracked the leaderboard scores and ranks,
+and used them to decide where to push further.  I checked the data issues that changed the protocol, such as the
+labelled test file and the test--dev overlap in Phase~4.  \ldots  Two things that failed: the cross-encoder
+re-ranker in Phase~7 memorised a single batch but did not generalise from 817 training queries, which suggested that
+it needs far more training pairs than we had; and token-level ensembling in Phase~6 scored below the best single
+model, so we combined complete summaries with consensus selection instead.  \ldots
+
+\medskip
+\noindent\textbf{GitHub repository:} \url{https://github.com/manishkr21/capstone_llm}
+
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\clearpage
+\appendix
+\input{appendix.tex}
+
+\end{document}
