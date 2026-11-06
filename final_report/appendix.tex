@@ -1,4 +1,4 @@
-% Appendix: method details of the six best Codabench submissions of each phase.
+% Appendix: method details of every phase and of the six best Codabench submissions of each phase.
 % Pipelines are drawn with \pipe{box,box,...}; a box containing a comma must be wrapped in braces.
 \newcommand{\pipe}[1]{\begin{tikzpicture}[node distance=1.9mm,
     pb/.style={draw=black!55,rounded corners=2pt,fill=blue!5,align=center,font=\scriptsize,
@@ -8,44 +8,113 @@
     \ifnum\i=1 \node[pb] (n\i) {\t};
     \else \pgfmathtruncatemacro\j{\i-1}\node[pb,right=of n\j] (n\i) {\t}; \draw[ar] (n\j)--(n\i); \fi}
 \end{tikzpicture}}
-\newcommand{\kw}[1]{\par\smallskip\noindent{\small #1}\par\smallskip}
+\makeatletter\newcommand{\tabinput}[1]{\@@input #1 }\makeatother % expandable \input inside tabulars
+\newcommand{\step}[1]{\par\smallskip\noindent\textbf{#1.}\ }
 \newenvironment{topsix}{\par\smallskip\noindent\scriptsize
   \tabularx{\linewidth}{@{}c>{\raggedright\arraybackslash}p{3.45cm}rr>{\raggedright\arraybackslash}X@{}}\toprule
   \# & Submission & Codabench & Local & Method (key settings)\\\midrule}{\bottomrule\endtabularx\par\medskip}
 
-\section{Method details of the top-6 submissions}\label{app:top6}
-For every phase: the shared pipeline (diagram), its common settings, and the six best finished Codabench
-submissions with the settings that distinguish them.  ``Local'' is the held-out score of the same prediction:
-P1 dev BERTScore F1 (200 leak-free prompts); P2 strict macro-F1 (10 held-out documents); P3 out-of-fold
-macro-F1 (5 folds); P4 clean-validation macro-F1 at the tuned threshold (stacks: nested split-half); P5
-cross-fitted macro-F1; P6 BERTScore F1 (300 validation documents; beam 4: 100); P7 dev micro-F1@7.
-Notation: $r$ = low-rank dimension, $\alpha$ = scaling, $\tau$ = logit-adjustment strength, KD = knowledge
-distillation with loss $\alpha\,\mathrm{CE}+(1-\alpha)T^2\,\mathrm{KL}$.
+\section{Method details}\label{app:top6}
+This appendix documents every phase in more detail than the page limit allows: shared components
+(\autoref{app:shared}), then for each phase the pipeline, the input processing, the model, training and
+selection, inference, all experiments with their local scores (tables generated from the run outputs by the
+phase reports), and the six best finished Codabench submissions with the settings that distinguish them.
+``Local'' scores: P1 dev BERTScore F1 (200 leak-free prompts); P2 strict macro-F1 (10 held-out documents); P3
+out-of-fold macro-F1 (5 folds); P4 clean-validation macro-F1 at the tuned threshold (stacks: nested split-half);
+P5 cross-fitted macro-F1; P6 BERTScore F1 (300 validation documents; beam 4: 100); P7 dev micro-F1@7.
 
-% ------------------------------------------------------------------
+% ==================================================================
+\subsection{Shared components}\label{app:shared}
+\step{Backbone wrapper} One module turns each Phase-1 model into an encoder that returns a hidden state per
+input token: A1 and A4 run their blocks with a causal (optionally bidirectional) mask, A3 runs with the whole
+input as its bidirectional prefix, and A2 runs its decoder over the input while cross-attending to its encoder
+(the Phase-1 A2 encoder output is nearly constant across inputs).  The language-model head is dropped.
+
+\step{Adaptation techniques} For a frozen pretrained weight $W_0\in\mathbb{R}^{d_\text{out}\times d_\text{in}}$
+and input $x$:
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Full fine-tuning}: every weight is trained.  \textbf{Partial}: only the top $k$ blocks and the
+  final norm.  \textbf{Gradual unfreezing}: the top block first, one more block every 300 steps.
+  \textbf{BitFit}: biases and norm gains only.
+  \item \textbf{LoRA}: $h=W_0x+\frac{\alpha}{r}BAx$, $A\in\mathbb{R}^{r\times d_\text{in}}$,
+  $B\in\mathbb{R}^{d_\text{out}\times r}$, $B=0$ at start.  \textbf{rsLoRA}: scale $\alpha/\sqrt{r}$.
+  \item \textbf{LoRMA}: multiplicative update $h=(I+\frac{\alpha}{r}BA)\,W_0x$, so the low-rank term transforms
+  the output of the pretrained map instead of adding to it.
+  \item \textbf{QLoRA}: $W_0$ is stored in 4-bit NormalFloat with one scale per block of 64 weights and
+  de-quantised on the fly; LoRA trains on top.
+  \item \textbf{AdaLoRA}: SVD-form update $P\Lambda Q$ with an orthogonality penalty; singular values are pruned
+  by an importance score from rank 12--32 to a smaller budget during training.
+  \item \textbf{IA$^3$}: learned vectors rescale keys, values and the MLP's hidden activations,
+  $k\odot l_k$, $v\odot l_v$, $\mathrm{MLP}_\text{in}\odot l_\text{ff}$ (0.2--0.3\% of parameters).
+  \item \textbf{Houlsby adapters}: $x+W_\text{up}\,\sigma(W_\text{down}x)$ after attention and after the MLP
+  (bottleneck 64--128), plus layer norms.
+  \item \textbf{Prefix tuning}: $P$ learned key/value vectors per layer, produced by a small MLP from $P$
+  embeddings and prepended to every attention.  \textbf{Prompt tuning}: $P$ learned input embeddings replace
+  the first $P$ positions.
+\end{itemize}
+
+\step{Knowledge distillation} The student keeps a subset of the teacher's blocks (Phase-1 weights) and is
+fully fine-tuned with $\mathcal{L}=\alpha\,\mathcal{L}_\text{task}+(1-\alpha)\,T^2\,
+\mathrm{KL}\big(\sigma(z_t/T)\,\|\,\sigma(z_s/T)\big)$; the teacher logits $z_t$ come from one run or the mean of
+several runs, computed once on the training data.
+
+\step{Sequence and ranking objectives} \textbf{CRF} (P3): $p(y\mid x)\propto\exp\big(\sum_i
+e_{i,y_i}+\sum_i T_{y_{i-1},y_i}\big)$ with emissions $e$ and transition matrix $T$, decoded by Viterbi.
+\textbf{InfoNCE} (P7): for query $q$ with gold set $G$ and batch candidates $C$,
+$\mathcal{L}=-\frac{1}{|G|}\sum_{g\in G}\log\frac{e^{s(q,g)/\tau}}{e^{s(q,g)/\tau}+\sum_{n\in C\setminus G}e^{s(q,n)/\tau}}$.
+\textbf{MBR selection} (P6): among candidates $c_1..c_k$, pick
+$\arg\max_i\sum_{j\ne i}\big(\mathrm{R1}(c_i,c_j)+\mathrm{R2}(c_i,c_j)\big)$.
+
+% ==================================================================
 \subsection{Phase 1 --- Legal language model pre-training}
 \begin{center}\pipe{{Legal corpus (Acts, HC, SC, Tribunals)},{Sampling and cleaning},{Byte-level BPE, 32k vocab},{Phase-1 LM, 1,024-token windows},{Next-token loss, AdamW},{Sampling decoder $\rightarrow$ 128 words}}\end{center}
-\kw{\textbf{Common:} next-token cross-entropy; AdamW ($6\times10^{-4}$, cosine, 200 warm-up steps); 65,536 tokens per
-step; best checkpoint by validation loss.  \textbf{Decoding:} temperature 0.8, top-$k$ 50, top-$p$ 0.95, repetition
-penalty 1.1 over the last 256 tokens, end-of-text banned before 128 words.  All six uploads are R0 models (starter
-sample, 200M tokens); the cleaned 1B-token models (R2) were trained after the Phase-1 deadline.}
+\step{Data} R0 used the starter sample (about 200M tokens).  The cleaned corpus samples whole files from the
+four sources, normalises characters and markup, repairs OCR word stutter (2.34M stuttered words), drops
+documents that are too short (379,813) or have few letters (29,393), removes 106,717 exact and 204,246
+MinHash near-duplicates, and builds a validation split sharing no text with either corpus (764 leaking
+validation documents dropped); it yields 1.006B training tokens.
+\step{Tokenizer} Byte-level BPE with 32,000 tokens trained on 100,000 training documents (1.25 tokens per word);
+a 512-word prompt is about 640 tokens.
+\step{Model and training} Four architectures (\autoref{tab:arch}); next-token cross-entropy (A2: continuation of
+a random-length prefix; A3: a random prefix read bidirectionally, half the examples fully causal); AdamW
+$\beta=(0.9,0.95)$, weight decay 0.1, peak LR $6\times10^{-4}$, 200 warm-up steps, cosine decay to
+$6\times10^{-5}$; 8 sequences $\times$ 8 accumulation $\times$ 1,024 tokens per step; R0/R1 3,000 steps, R2
+12,260 more; validation every 250 steps on the 257 tokens after a 768-token prefix.
+\step{Inference} Prompt pre-filled into a KV cache; temperature 0.8, top-$k$ 50, top-$p$ 0.95, repetition
+penalty 1.1 over the last 256 tokens; end-of-text banned until 128 words.
+\begin{center}\scriptsize\begin{tabular}{llrrrrrr}\toprule
+& & \multicolumn{3}{c}{Perplexity} & \multicolumn{3}{c}{Dev generation}\\\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+Model & Run & Old val & Leak-free & Fair & BERTScore & ROUGE-L & BLEU-4\\\midrule
+\tabinput{tables/phase/p1_results.tex}
+\bottomrule\end{tabular}\end{center}
 \begin{topsix}
-1 & submission\_2026-09-26\_22-29-00 & 0.8286 & 0.8286 & \textbf{A1 GPT}: decoder-only, learned positions, pre-LayerNorm, GELU; 8 layers, $d=768$, 12 heads; 82.1M.\\
-2 & submission\_2026-09-27\_01-22-10 & 0.8285 & 0.8255 & \textbf{A3 prefix-LM}: bidirectional prefix, causal continuation, ALiBi positions; 8 layers, $d=768$; 81.3M.\\
-3 & submission\_2026-09-27\_01-29-15 & 0.8280 & 0.8269 & \textbf{A4 efficient}: RoPE, RMSNorm, SwiGLU, grouped-query attention (12 q / 4 kv), 256-token sliding window, global layer every 3rd; 10 layers; 87.5M.\\
-4 & submission\_2026-09-26\_22-38-32 & 0.8184 & 0.8170 & \textbf{A2 encoder--decoder}: 6+6 layers, sinusoidal positions, $d=640$; trained on random prefix/continuation splits; 89.4M.\\
+1 & submission\_2026-09-26\_22-29-00 & 0.8286 & 0.8286 & \textbf{A1 GPT} (R0): decoder-only, learned positions, pre-LayerNorm, GELU; 8 layers, $d=768$, 12 heads; 82.1M.\\
+2 & submission\_2026-09-27\_01-22-10 & 0.8285 & 0.8255 & \textbf{A3 prefix-LM} (R0): bidirectional prefix, causal continuation, ALiBi positions; 8 layers, $d=768$; 81.3M.\\
+3 & submission\_2026-09-27\_01-29-15 & 0.8280 & 0.8269 & \textbf{A4 efficient} (R0): RoPE, RMSNorm, SwiGLU, grouped-query attention (12 q / 4 kv), 256-token sliding window, global layer every 3rd; 10 layers; 87.5M.\\
+4 & submission\_2026-09-26\_22-38-32 & 0.8184 & 0.8170 & \textbf{A2 encoder--decoder} (R0): 6+6 layers, sinusoidal positions, $d=640$; random prefix/continuation splits; 89.4M.\\
 5 & submission.zip (26 Sep) & 0.8006 & -- & Early upload before the four-architecture runs; the file does not identify the model.\\
 6 & submission.zip (25 Sep) & 0.8002 & -- & Early upload, as above.\\
 \end{topsix}
 
-% ------------------------------------------------------------------
+% ==================================================================
 \subsection{Phase 2 --- Legal named-entity recognition}
 \begin{center}\pipe{{Judgment text},{Punctuation pre-split, BPE + offset map},{Spans $\rightarrow$ BIO tags (12 types)},{Phase-1 encoder, 512-token windows},{Linear tag head},{BIO Viterbi $\rightarrow$ character spans}}\end{center}
-\kw{\textbf{Common:} windows of 512 tokens, stride 256 (training) / 128 (inference, each token keeps its
-best-context window); 16 windows per step; up to 15 epochs, patience 5; head learning rate $10^{-3}$; selection by
-strict span macro-F1 on 10 held-out documents.  Original (R0) Phase-1 backbones.}
+\step{Input} Runs of punctuation are split before BPE so entity boundaries fall on token boundaries; the
+tokenizer's offset table maps every token to its characters, so a gold span becomes B-/I- tags on its tokens
+and a predicted tag sequence maps back to exact character offsets (round trip: 99.45\% of gold spans).
+\step{Model} Phase-1 encoder (R0 checkpoints) $\rightarrow$ dropout 0.1 $\rightarrow$ linear layer over
+$2\times12+1=25$ BIO tags.
+\step{Training and selection} Windows of 512 tokens with stride 256; 16 windows per step; AdamW, 10\% warm-up,
+up to 15 epochs with patience 5; head learning rate $10^{-3}$; best epoch by strict span macro-F1 on 10 of the
+70 training documents (later confirmed on three different 10-document splits).
+\step{Inference} Overlapping windows (stride 128), each token keeps the logits of the window in which it has the
+most context; Viterbi decoding restricted to valid BIO transitions (I-$X$ only after B-$X$ or I-$X$).
+\begin{center}\scriptsize\resizebox{\linewidth}{!}{\begin{tabular}{lllrrrrrrrrrr}\toprule
+Run & Arch & Method & Trainable & \% & Macro-F1 & P & R & Micro-F1 & Span & Min & GB & MB\\\midrule
+\tabinput{tables/phase/p2_main.tex}
+\bottomrule\end{tabular}}\end{center}
 \begin{topsix}
-1 & E2\_a4\_lorma & 0.4970 & 0.4857 & \textbf{A4 + LoRMA}: $W=(I+\frac{\alpha}{r}BA)W_0$, $r=16$, $\alpha=32$, on q, k, v, o, gate, up, proj; bidirectional attention; LR $10^{-3}$; 2.2M trained.\\
+1 & E2\_a4\_lorma & 0.4970 & 0.4857 & \textbf{A4 + LoRMA}: $r=16$, $\alpha=32$, on q, k, v, o, gate, up, proj; bidirectional attention; LR $10^{-3}$; 2.2M trained.\\
 2 & E1\_a3\_full & 0.4815 & 0.4267 & \textbf{A3 full fine-tuning}: every weight; LR $10^{-4}$; 81.3M trained.\\
 3 & E5\_a4\_partial & 0.4753 & 0.4697 & \textbf{A4 partial}: top 4 of 10 blocks + final norm trainable; bidirectional; LR $2\times10^{-4}$.\\
 4 & E3\_a1\_lora & 0.4239 & 0.3564 & \textbf{A1 + LoRA}: $r=16$, $\alpha=32$ on q, k, v, o, fc, proj; bidirectional; LR $10^{-3}$; 1.8M trained.\\
@@ -53,32 +122,59 @@ strict span macro-F1 on 10 held-out documents.  Original (R0) Phase-1 backbones.
 6 & E6\_kd\_a3\_small & 0.3799 & 0.3443 & \textbf{KD}: A3 student with blocks 1, 3, 5, 7 (52.9M), full fine-tuning; teacher E1; $\alpha=0.5$, $T=2$.\\
 \end{topsix}
 
-% ------------------------------------------------------------------
+% ==================================================================
 \subsection{Phase 3 --- Rhetorical role prediction}
 \begin{center}\pipe{{Judgment sentences},{Pack neighbours into windows},{Phase-1 encoder + PEFT},{Mean-pool per sentence},{BiLSTM + position, domain emb.},{Sentence CRF $\rightarrow$ 13 roles}}\end{center}
-\kw{\textbf{Common:} cleaned 1B-token backbones; BiLSTM hidden 256; linear-chain CRF over sentences; logit-adjusted
-loss for rare roles; 5-fold document-level cross-validation over the 90 labelled documents (CL + IT, domain
-embedding); test emissions averaged over the 5 fold models.  ``Tuned'' (T7--T22) = causal attention, 20 epochs
-(patience 6), $\tau=0.5$.  Ensembles average the CRF emissions of several runs; ``nocal'' = no per-class bias
-calibration.}
+\step{Input} Each sentence is cut to at most 128 tokens; consecutive sentences are packed into backbone windows
+of 512 (or 1,024) tokens, so every sentence is encoded together with its neighbours.
+\step{Model} Mean of the backbone states over each sentence's tokens $\rightarrow$ concatenated with a
+relative-position bucket (20 buckets) and a domain embedding (CL / IT) $\rightarrow$ BiLSTM (hidden 256) over the
+document's sentences $\rightarrow$ emission scores for 13 roles $\rightarrow$ linear-chain CRF.
+\step{Loss} CRF negative log-likelihood with logit adjustment: emissions are shifted by $\tau\log\pi_y$ ($\pi$ =
+training role frequencies) during training so that rare roles are not drowned out.
+\step{Training and selection} Chunks of 128 consecutive sentences, 4 chunks per step; backbone (PEFT) and head
+learning rate $10^{-3}$; 12 epochs, patience 4 (tuned runs: 20, patience 6, $\tau=0.5$, causal mask);
+5-fold document-level cross-validation stratified by domain; out-of-fold macro-F1 is the selection metric.
+\step{Inference and ensembles} Test emissions are averaged over the 5 fold models (ensembles: over several runs'
+fold models), then Viterbi.  Optional class-bias calibration fitted on out-of-fold emissions.
+\begin{center}\scriptsize\resizebox{\linewidth}{!}{\begin{tabular}{lllrrrrrrrrrr}\toprule
+Run & Arch & Method & Trainable & OOF F1 & CL & IT & Fold mean & P & R & Min & GB & MB\\\midrule
+\tabinput{tables/phase/p3_first.tex}
+\bottomrule\end{tabular}}\end{center}
+{\scriptsize\begin{longtable}{@{}llp{5.0cm}p{3.3cm}rrr@{}}\caption{Phase-3 tuning runs (parent, purpose, change, out-of-fold macro-F1).}\\\toprule
+Run & Parent & Purpose & Change & OOF F1 & $\Delta$ & Fold mean\\\midrule\endfirsthead
+\toprule Run & Parent & Purpose & Change & OOF F1 & $\Delta$ & Fold mean\\\midrule\endhead
+\tabinput{tables/phase/p3_tuning.tex}
+\bottomrule\end{longtable}}
 \begin{topsix}
-1 & T14\_t8\_win1024 & 0.5750 & 0.5007 & \textbf{A1 + LoRA} ($r=16$, $\alpha=32$), tuned, \textbf{1,024-token windows} (matches the pre-training block length); 2.4M trained.\\
+1 & T14\_t8\_win1024 & 0.5750 & 0.5007 & \textbf{A1 + LoRA} ($r=16$, $\alpha=32$), tuned, \textbf{1,024-token windows} (the pre-training block length); 2.4M trained.\\
 2 & T15\_t8\_r32 & 0.5736 & 0.4926 & As T8 with LoRA rank 32 ($\alpha=64$); 4.1M trained.\\
-3 & C6\_ens\_8\_nocal & 0.5711 & 0.5200 & \textbf{Ensemble of 8}: T14, T17 (BiLSTM 512), T18/T19 (seeds), T7 (A4 LoRMA), T13 (KD 6-block A4), T10 (A4 QLoRA), T9 (A3 rsLoRA).\\
+3 & C6\_ens\_8\_nocal & 0.5711 & 0.5200 & \textbf{Ensemble of 8}: T14, T17 (BiLSTM 512), T18/T19 (seeds), T7 (A4 LoRMA), T13 (KD 6-block A4), T10 (A4 QLoRA), T9 (A3 rsLoRA); no calibration.\\
 4 & T8\_e2\_causal\_ep20\_tau05 & 0.5709 & 0.4915 & \textbf{A1 + LoRA}, tuned, 512-token windows.\\
 5 & C7\_ens\_fold\_plus\_all & 0.5707 & 0.5211 & \textbf{C7 ensemble} (as C6 with lexical cue flags in T20/T22): fold models plus their all-data retrains averaged.\\
 6 & C5\_ens\_a1x4\_nocal & 0.5696 & 0.5179 & \textbf{Ensemble of 4 A1 LoRA taggers}: T14, T17, T18, T19.\\
 \end{topsix}
 
-% ------------------------------------------------------------------
+% ==================================================================
 \subsection{Phase 4 --- Court judgment prediction}
 \begin{center}\pipe{{Judgment (outcome removed)},{BPE, last 8 or 16 chunks of 512},{Phase-1 encoder + adaptation},{Mean-pool chunks + position},{BiGRU + attention pooling},{2-class head, tuned threshold}}\\[2mm]
 \pipe{{Probabilities / chunk vectors of 26 runs},{Document models on cached chunks (D\_*)},{Logistic-regression stacker},{Threshold on clean validation},{0 / 1 prediction}}\end{center}
-\kw{\textbf{Common:} class-weighted cross-entropy (train 59\% label 0); 16 documents per step; 2 epochs; selection
-and threshold on the 1,988 development documents not in the test set.  \textbf{Stackers} (rows 1--2): logistic
-regression ($\ell_2=0.01$) over every run's logit, fitted on clean validation.  \textbf{D\_* document models}: the
-last $\le$48 chunks of each judgment embedded once by fine-tuned encoders (V1, V2, V3), concatenated, read by
-mean / attention / GRU / LSTM / 2-layer transformer layers.}
+\step{Input} The judgment is tokenized once; 512-token chunks are counted from the end and the last 8 (V1/V2: 16)
+are kept; ablations keep the first 8, first 4 + last 4, or 8 evenly spread.
+\step{Model} Chunk vector $c_j$ = mean of the backbone states $\rightarrow$ projection to 256 + position embedding
+$\rightarrow$ BiGRU $\rightarrow$ attention pooling $\sum_j a_j h_j$, $a=\mathrm{softmax}(w^\top h_j)$ $\rightarrow$ 2
+logits.
+\step{Training and selection} Class-weighted cross-entropy (weights inverse to the 59/41 training frequencies);
+16 documents per step; 2 epochs; 6\% warm-up and cosine decay; validation every 250 steps on the 1,988
+development documents not in the test set; the decision threshold on $P(y{=}1)$ is tuned on the same documents.
+\step{Document models and stacking} \code{embed\_chunks.py} stores every chunk vector of fine-tuned encoders once;
+\code{doc\_train.py} trains light document layers (mean, attention, GRU, LSTM, 2-layer transformer) on the
+concatenated vectors of 1, 3 or 5 encoders.  \code{stack\_submission.py} fits an $\ell_2$-regularised logistic
+regression on clean validation over every run's logit and reports a nested split-half estimate.
+\begin{center}\scriptsize\resizebox{\linewidth}{!}{\begin{tabular}{lllllrrrrrr}\toprule
+Run & Arch & Method & Chunks & Trainable & \% & F1 & F1@0.5 & thr & P & R\\\midrule
+\tabinput{tables/phase/p4_results.tex}
+\bottomrule\end{tabular}}\end{center}
 \begin{topsix}
 1 & STACK\_with\_fusion & 0.8121 & 0.8225 & \textbf{Stacker over 26 runs}: E1--E8, 3 chunk-selection ablations, V1--V6, 9 D\_* document models (fusing 1, 3 or 5 encoders); threshold 0.52.\\
 2 & STACK\_all & 0.8048 & 0.8160 & \textbf{Stacker over 17 end-to-end runs} (no document models); threshold 0.50.\\
@@ -88,16 +184,30 @@ mean / attention / GRU / LSTM / 2-layer transformer layers.}
 6 & ENS\_top5 & 0.7930 & 0.7974 & \textbf{Mean of 5 best first-round runs}: E6 (A4 partial), E7 (A3 gradual), E1 (A1 full), E3 (A3 adapters), E2 (A4 LoRMA+); threshold 0.39.\\
 \end{topsix}
 
-% ------------------------------------------------------------------
+% ==================================================================
 \subsection{Phase 5 --- Legal statute identification}
 \begin{center}\pipe{{Case text (statutes masked)},{8 spread chunks of 512},{Phase-1 encoder + adaptation},{BiGRU over chunk vectors},{Attention per statute (100 queries)},{100 sigmoids, per-statute thresholds}}\\[2mm]
 \pipe{{Logits of 28 Phase-1 runs},{+ TF-IDF models (lexical)},{MLP stacker (5-fold on val)},{Per-statute LightGBM stacker},{Average, thresholds}}\end{center}
-\kw{\textbf{Common:} BCE with positive weights $\sqrt{n_\text{neg}/n_\text{pos}}$ (cap 30); 16 documents per step;
-per-statute thresholds fitted on validation (scored cross-fitted); KD students = A4 with 6 of 10 blocks distilled
-from averaged logits of 3--8 earlier runs.  \textbf{Stackers:} trained 5-fold on the validation split (out-of-fold
-scores), fold models averaged for test.  \textbf{MLP}: all runs' logits for all 100 statutes, hidden 512, dropout
-0.3.  \textbf{LightGBM}: per statute, each run's logit for it, the mean logit of all statutes, and model spread.
-Rows 1--5 are \emph{hybrid} (TF-IDF logistic regression / SVM use no pretrained weights).}
+\step{Input} Eight 512-token chunks spread evenly over the document (the whole document when it has at most 8
+chunks, 88\% of validation documents); variant V1 centres chunks on the masked \code{<SECTION>}/\code{<ACT>}
+placeholders.
+\step{Model} Chunk vectors $\rightarrow$ projection to 384 + position embedding $\rightarrow$ BiGRU states $H$
+$\rightarrow$ for each statute $\ell$: $a_\ell=\mathrm{softmax}(Hq_\ell)$, $z_\ell=w_\ell^\top(a_\ell^\top H)+b_\ell$, with
+a query $q_\ell$ and output vector $w_\ell$ per statute.
+\step{Loss} $\sum_\ell \mathrm{BCE}(z_\ell,y_\ell)$ with positive weight $\min(30,\sqrt{n^-_\ell/n^+_\ell})$.
+\step{Training and selection} 16 documents per step, 3 epochs (later 5--8), learning rates per technique
+($5\times10^{-5}$ full / KD to $3\times10^{-3}$ prompt), head $10^{-3}$; a fixed 2,000-document validation subset
+scored every 800--2,000 steps.
+\step{Thresholds} Per statute, a grid search on validation (statutes with fewer than 5 validation positives use
+the global threshold); at least one statute per document.  Reported scores are cross-fitted (thresholds
+fitted on one half, scored on the other, both directions).
+\step{Stacking} Out-of-fold over the validation split (5 folds), 5 fold models averaged for test.  MLP: input =
+every run's 100 logits, one hidden layer of 512, dropout 0.3, 30 epochs.  LightGBM: per statute, features =
+each run's logit for it, the mean logit of all statutes, and the across-run spread.
+\begin{center}\scriptsize\resizebox{\linewidth}{!}{\begin{tabular}{lllrrrrrrrrr}\toprule
+Run & Arch & Method & Ep. & Trainable & \% & Global & CF & P & R & Micro & Subset\\\midrule
+\tabinput{tables/phase/p5_results.tex}
+\bottomrule\end{tabular}}\end{center}
 \begin{topsix}
 1 & STACK11\_full & 0.4624 & 0.4603 & MLP (2 seeds) + LightGBM (3 seeds) over 28 Phase-1 runs and 6 lexical models, incl.\ a TF-IDF model trained on train + validation folds.\\
 2 & STACK10\_seedavg & 0.4587 & 0.4602 & As STACK9, averaged over independently seeded stackers.\\
@@ -107,14 +217,29 @@ Rows 1--5 are \emph{hybrid} (TF-IDF logistic regression / SVM use no pretrained 
 6 & STACK6\_all & 0.4231 & 0.4233 & MLP stacker over 27 Phase-1 runs only: all four architectures, 8 PEFT methods, 6 KD students.\\
 \end{topsix}
 
-% ------------------------------------------------------------------
+% ==================================================================
 \subsection{Phase 6 --- Abstractive summarization}
 \begin{center}\pipe{{Judgment, sentence-split},{Salient condensation to source budget},{[prompt] source ``Summary:''},{Phase-1 LM, full fine-tuning},{Decode: greedy or beam},{Repetition control $\rightarrow$ summary}}\end{center}
-\kw{\textbf{Common:} loss on summary tokens only (up to 768); salient condensation = case opening (15\% of the
-budget) + sentences nearest the document's TF-IDF centroid, in order; AdamW, 16 sequences per step; best state by
-validation loss.  \textbf{Decoding:} 300--800 new tokens, repetition penalty 1.15, no repeated 3-grams.  Long
-sources: A4 (RoPE) extrapolates; A1's learned positions are linearly interpolated; longer-source runs start
-from the shorter-source checkpoint.}
+\step{Input} The document is sentence-split and tokenized once.  If it exceeds the source budget $B$
+(1,280--8,192 tokens), \emph{salient} condensation keeps the opening of the case ($0.15B$; S7c $0.3B$) and fills the
+rest with the sentences closest (cosine) to the document's own TF-IDF centroid, restored to document order;
+\emph{spread} keeps evenly spaced sentences.
+\step{Model} One sequence [prompt][left-padded source][``\texttt{ Summary:}''][summary][end]; the loss is the
+cross-entropy on summary tokens only (up to 768).  A3 attends bidirectionally over prompt and source.  A2: the
+source is split into 4 chunks of 1,024 tokens, each encoded separately (fusion-in-decoder).  Long sources: A1's
+learned position table $E\in\mathbb{R}^{1024\times d}$ is linearly interpolated to the needed length; A4 (RoPE)
+and A3 (ALiBi) are used as they are.
+\step{Training and selection} AdamW, 16 sequences per step (micro-batch $\times$ accumulation), warm-up 100 (50 when
+continuing a run), cosine decay, weight decay 0.01, dropout 0.1, bf16; 4--6 epochs from Phase~1, or 2--3 epochs
+at $4$--$5\times10^{-5}$ when continuing a shorter-source run; best state by validation loss.
+\step{Inference} KV-cached greedy decoding (or beam search with cache re-ordering), 300--800 new tokens,
+repetition penalty 1.15, no repeated 3-grams.  \code{mbr.py} selects per document the candidate with the highest
+ROUGE-1 + ROUGE-2 agreement with the other candidates; \code{ensemble.py} averages next-token log-probabilities
+of several models.
+\begin{center}\scriptsize\resizebox{\linewidth}{!}{\begin{tabular}{llllrrrrrrr}\toprule
+Run & Arch & Method & Source & Ep. & Trainable & Loss & BERTScore F1 & ROUGE-1 & ROUGE-L & Words\\\midrule
+\tabinput{tables/phase/p6_results.tex}
+\bottomrule\end{tabular}}\end{center}
 \begin{topsix}
 1 & S3\_a4\_full\_src4096\_beam4 & 0.8558 & 0.8522 & \textbf{A4 full}, 4,096-token source, 5 epochs from Phase-1; \textbf{beam search, 4 beams}.\\
 2 & S4\_a4\_full\_src8192 & 0.8539 & 0.8515 & \textbf{A4 full}, 8,192-token source, 3 epochs continued from S3 (LR $5\times10^{-5}$); greedy.\\
@@ -124,15 +249,33 @@ from the shorter-source checkpoint.}
 6 & S3\_a4\_full\_src4096 & 0.8520 & 0.8518 & S3, greedy decoding.\\
 \end{topsix}
 
-% ------------------------------------------------------------------
+% ==================================================================
 \subsection{Phase 7 --- Prior case retrieval}
 \begin{center}\pipe{{Query: windows $\pm$60 words per \texttt{<CITATION>}},{BM25 per window vs.\ pool (1--3-grams)},{Date penalty, row + column normalisation},{Top-100 candidates},{LightGBM lambdarank},{+ $w\cdot$ mean bi-encoder score $\rightarrow$ top 7}}\\[2mm]
 \pipe{{Citation window / case chunk (512)},{Phase-1 encoder + PEFT},{Mean-pool, project to 256},{Cosine, max over chunks},{Soft-max over windows},{InfoNCE with BM25 hard negatives}}\end{center}
-\kw{\textbf{Common:} the query's own case is never returned; 7 distinct pool ids per query.  \textbf{Re-ranker}
-(STK*): features = row and column z-scores and ranks of 7 lexical scores, date difference, case length, number of
-windows; trained on train (3 seeds), refit on train + dev for test.  \textbf{Bi-encoder} (second diagram): 8
-queries per step, 2 gold + 3 hard negatives each, temperature 0.05, best of 10 epochs on dev.  \textbf{Fused} =
-z(neural) + $\lambda$ z(BM25) $-$ date penalty, weights picked on dev.}
+\step{Lexical retrieval} BM25 ($k_1=1.2$, $b=0.75$, word 1--3-grams, document frequency 2 to 50\% of the pool) with
+one query per citation window $w$; $S_w$ = z-score of the window's BM25 scores over the pool; query score
+$S(q,c)=\max_{w\in q}S_w(c)$.  Date penalty: $-2$ when the case's judgment year is after the query's.  Column
+normalisation: $Z=\mathrm{z}_\text{row}(S)$, $S'=Z+\mathrm{z}_\text{col}(Z)$, where $\mathrm{z}_\text{col}$
+standardises each candidate's scores over all queries of the split; the window-level variant applies the same
+row/column step to $S_w$ over all windows before the maximum ($\gamma=2$ on the column term).
+\step{Bi-encoder} Windows (at most 256 tokens) and candidate chunks (512 tokens; 4 random chunks per case in
+training, 32 evenly spread at evaluation) go through the same backbone, mean pooling and a 256-dimensional
+projection, $\ell_2$-normalised.  $s(w,c)=\max_{j}\cos(w,c_j)$;
+$s(q,c)=\tau_w\log\sum_{w\in q}e^{s(w,c)/\tau_w}$ with $\tau_w=0.05$.
+\step{Training} 8 queries per step; for each, 2 gold cases and 3 hard negatives sampled from the top 30 non-gold
+cases of per-citation BM25; all queries scored against all cases of the batch; multi-positive InfoNCE
+($\tau=0.05$), the query's own case masked; 10 epochs; best epoch by dev micro-F1@7.  KD: KL between teacher and
+student score distributions over the batch at temperature $2\tau$.
+\step{Re-ranking} LightGBM lambdarank (600 trees, 15 leaves, learning rate 0.03, 3 seeds) over each query's top
+100 first-stage candidates; features: row and column z-scores and ranks of 7 lexical scores (11 with the
+window-level scores), date difference and violation, log case length, log number of windows, whether the case
+is a query; trained on train, refit on train + dev for test.  Final score $=\mathrm{z}(\text{ranker})+w\cdot
+\overline{\mathrm{z}_\text{row}+\mathrm{z}_\text{col}}(\text{bi-encoders})$.
+\begin{center}\scriptsize\resizebox{\linewidth}{!}{\begin{tabular}{lllrrrrrrr}\toprule
+Run & Arch & Method & Total & Trainable & \% & Neural F1 & P & R & Fused F1\\\midrule
+\tabinput{tables/phase/p7_results.tex}
+\bottomrule\end{tabular}}\end{center}
 \begin{topsix}
 1 & STK4\_rc\_blend4 & 0.4950 & 0.4914 & Re-ranker with row + column features and first stage, \textbf{+ 0.5 $\times$ mean row + column score of 4 bi-encoders} (E1 A3 LoRMA, E2 A1 full, E3 A4 partial, E5 A3 IA$^3$).\\
 2 & STK2\_lex\_blend4 & 0.4773 & 0.4869 & Re-ranker (row features only) + 0.3 $\times$ mean row score of the same 4 bi-encoders.\\

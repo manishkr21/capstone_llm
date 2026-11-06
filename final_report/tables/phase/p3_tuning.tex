@@ -1,0 +1,18 @@
+T1 & E1 & E1 with 512-sentence training chunks (the BiLSTM sees most of a document; targets Dissent, rulings) & chunk\_sents=512, chunks\_per\_step=1 & 0.416 & -0.038 & 0.432$\pm$0.049 \\
+T2 & E1 & E1 with weaker logit adjustment (macro recall 0.51 > precision 0.44 at tau 1) & logit\_adjust\_tau=0.5 & 0.459 & +0.004 & 0.509$\pm$0.033 \\
+T3 & E3 & E3 trained longer (best epoch was 12, 11, 12, 9 of 12) & epochs=20, patience=6 & 0.467 & +0.026 & 0.475$\pm$0.022 \\
+T4 & E2 & E2 with causal attention (A1 was pretrained causally only) & attention=causal & 0.477 & +0.147 & 0.499$\pm$0.010 \\
+T6 & E1 & E1 with causal attention only (isolates the attention effect on A4) & attention=causal & 0.459 & +0.004 & 0.489$\pm$0.017 \\
+T7 & E1 & E1 (A4 LoRMA) causal + 20 epochs + tau 0.5 & attention=causal, epochs=20, logit\_adjust\_tau=0.5, patience=6 & 0.500 & +0.045 & 0.547$\pm$0.023 \\
+T8 & E2 & T4 (A1 LoRA causal) + 20 epochs + tau 0.5 (T4 peaked at its last epoch in 3/5 folds) & attention=causal, epochs=20, logit\_adjust\_tau=0.5, patience=6 & 0.491 & +0.161 & 0.538$\pm$0.034 \\
+T9 & E3 & T3 (A3 rsLoRA, 20 epochs) + tau 0.5 & epochs=20, logit\_adjust\_tau=0.5, patience=6 & 0.466 & +0.025 & 0.519$\pm$0.026 \\
+T10 & E5 & E5 (A4 QLoRA) causal + 20 epochs + tau 0.5 & attention=causal, epochs=20, logit\_adjust\_tau=0.5, patience=6 & 0.485 & +0.062 & 0.544$\pm$0.030 \\
+T11 & E8 & E8 (A4 prefix tuning) causal + 20 epochs + tau 0.5 & attention=causal, epochs=20, logit\_adjust\_tau=0.5, patience=6 & 0.447 & +0.121 & 0.504$\pm$0.035 \\
+T12 & E9 & E9 (A1 prompt tuning) causal + 20 epochs + tau 0.5 & attention=causal, epochs=20, logit\_adjust\_tau=0.5, patience=6 & 0.422 & +0.149 & 0.456$\pm$0.033 \\
+T13 & E6 & E6 (KD, A4 6/10-layer student, full FT) with the stronger T7 teacher, causal, 20 epochs, tau 0.5 & attention=causal, epochs=20, logit\_adjust\_tau=0.5, patience=6, teacher=T7 & 0.498 & +0.095 & 0.537$\pm$0.026 \\
+T14 & T8 & T8 with 1024-token windows (A1 was pretrained on 1024-token blocks) & max\_windows=16, window=1024, max\_windows=8, window=1024 & 0.501 & +0.009 & 0.558$\pm$0.028 \\
+T15 & T8 & T8 with LoRA rank 32 (alpha 64, same scale) & alpha=64, r=32 & 0.493 & +0.001 & 0.548$\pm$0.021 \\
+T16 & T8 & T8 with half the learning rate (fold 3 peaked at epoch 3) & lr=0.0005 & 0.497 & +0.005 & 0.552$\pm$0.022 \\
+T17 & T8 & T8 with a wider document layer (BiLSTM hidden 512) & hidden=512 & 0.500 & +0.008 & 0.557$\pm$0.025 \\
+T18 & T8 & T8, another seed (same folds) -- for a seed ensemble & seed=2024 & 0.500 & +0.008 & 0.548$\pm$0.022 \\
+T19 & T8 & T8, a third seed (same folds) -- for a seed ensemble & seed=7 & 0.500 & +0.008 & 0.553$\pm$0.026 \\

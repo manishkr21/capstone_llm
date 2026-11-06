@@ -32,7 +32,8 @@ plt.rcParams.update({
 # figures reused from the phase reports (generated there from the run outputs)
 COPY = {"p1_val_retrain.pdf": ROOT / "p1/report/figs/val_retrain.pdf",
         "p6_source_length.pdf": ROOT / "p6/report/figs/source_length.pdf",
-        "p7_curves.pdf": ROOT / "p7/report/figs/curves.pdf"}
+        "p7_curves.pdf": ROOT / "p7/report/figs/curves.pdf",
+        "p5_perlabel.pdf": ROOT / "p5/report/figs/perlabel.pdf"}
 
 
 def data_figure():
