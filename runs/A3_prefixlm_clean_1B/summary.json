@@ -1,0 +1,30 @@
+{
+  "run_name": "A3_prefixlm_clean_1B",
+  "arch": "prefixlm",
+  "description": "Prefix-LM hybrid: bidirectional prompt + causal continuation in one stack, ALiBi",
+  "params_total": 81280512,
+  "params_non_embedding": 56704512,
+  "best_val_loss": 2.0495189160108565,
+  "best_val_ppl": 7.764164992219669,
+  "steps": 12260,
+  "tokens_seen": 803471360,
+  "train_seconds_this_session": 3685.920451402664,
+  "block_size": 1024,
+  "eval_prefix_len": 768,
+  "peak_gpu_mem_gb": 12.596523008,
+  "distilled_from": null,
+  "compute": {
+    "monitored_hours": 1.024,
+    "sessions": 1,
+    "gpu_name": "Failed to initialize NVML: Driver/library version mismatch\nNVML library version: 580.178",
+    "gpu_hours": 1.024,
+    "mean_cpu_pct": 8.82,
+    "mean_gpu_util_pct": null,
+    "peak_ram_gb": 58.203,
+    "peak_proc_rss_gb": 3.56,
+    "peak_vram_gb": null,
+    "peak_torch_alloc_gb": 11.731,
+    "mean_gpu_power_w": null,
+    "energy_kwh": null
+  }
+}

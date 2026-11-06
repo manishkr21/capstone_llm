@@ -1,0 +1,12 @@
+{"epoch": 1, "step": 93, "train_loss": 0.7902, "elapsed_s": 9.6, "macro_f1": 0.2487, "macro_p": 0.2642, "macro_r": 0.2551, "micro_f1": 0.3509, "span_only_f1": 0.4132}
+{"epoch": 2, "step": 185, "train_loss": 0.0812, "elapsed_s": 23.5, "macro_f1": 0.3147, "macro_p": 0.3605, "macro_r": 0.3278, "micro_f1": 0.432, "span_only_f1": 0.4835}
+{"epoch": 3, "step": 277, "train_loss": 0.0405, "elapsed_s": 36.9, "macro_f1": 0.3954, "macro_p": 0.4133, "macro_r": 0.4297, "micro_f1": 0.4822, "span_only_f1": 0.5668}
+{"epoch": 4, "step": 370, "train_loss": 0.0223, "elapsed_s": 50.1, "macro_f1": 0.3631, "macro_p": 0.4078, "macro_r": 0.3582, "micro_f1": 0.4707, "span_only_f1": 0.5018}
+{"epoch": 5, "step": 462, "train_loss": 0.011, "elapsed_s": 62.4, "macro_f1": 0.4299, "macro_p": 0.4313, "macro_r": 0.4728, "micro_f1": 0.4847, "span_only_f1": 0.561}
+{"epoch": 6, "step": 555, "train_loss": 0.0072, "elapsed_s": 74.0, "macro_f1": 0.3911, "macro_p": 0.4516, "macro_r": 0.3969, "micro_f1": 0.4764, "span_only_f1": 0.5301}
+{"epoch": 7, "step": 648, "train_loss": 0.0051, "elapsed_s": 83.9, "macro_f1": 0.4343, "macro_p": 0.4436, "macro_r": 0.4565, "micro_f1": 0.5097, "span_only_f1": 0.5628}
+{"epoch": 8, "step": 741, "train_loss": 0.0031, "elapsed_s": 97.1, "macro_f1": 0.3931, "macro_p": 0.3996, "macro_r": 0.4086, "micro_f1": 0.4573, "span_only_f1": 0.5263}
+{"epoch": 9, "step": 833, "train_loss": 0.0027, "elapsed_s": 110.1, "macro_f1": 0.3926, "macro_p": 0.4054, "macro_r": 0.4073, "micro_f1": 0.4651, "span_only_f1": 0.5282}
+{"epoch": 10, "step": 925, "train_loss": 0.0019, "elapsed_s": 125.1, "macro_f1": 0.4076, "macro_p": 0.4082, "macro_r": 0.435, "micro_f1": 0.4937, "span_only_f1": 0.5541}
+{"epoch": 11, "step": 1017, "train_loss": 0.0021, "elapsed_s": 138.6, "macro_f1": 0.4032, "macro_p": 0.4211, "macro_r": 0.4148, "micro_f1": 0.4838, "span_only_f1": 0.5352}
+{"epoch": 12, "step": 1110, "train_loss": 0.0012, "elapsed_s": 150.2, "macro_f1": 0.4175, "macro_p": 0.4231, "macro_r": 0.4392, "micro_f1": 0.4955, "span_only_f1": 0.55}

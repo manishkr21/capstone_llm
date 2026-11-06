@@ -1,0 +1,29 @@
+run_name: dbg
+seed: 0
+model:
+  phase1_ckpt: runs/A4_efficient_clean_1B/best.pt
+  src_len: 1280          # condensed source tokens (A2: tokens per chunk)
+  tgt_len: 768           # summary tokens trained on (median reference ~770)
+  dropout: 0.1
+data:
+  strategy: salient      # head | spread | salient
+  head_frac: 0.15
+peft:
+  method: full
+train:
+  epochs: 4
+  lr: 1.0e-4
+  micro_batch: 4
+  grad_accum: 4
+  warmup: 100
+  weight_decay: 0.01
+  label_smoothing: 0.0
+  eval_batch: 8
+gen:
+  max_new_tokens: 800
+  min_new_tokens: 300
+  no_repeat_ngram: 3
+  repetition_penalty: 1.15
+  temperature: 0
+  batch_size: 32
+  val_docs: 300

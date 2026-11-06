@@ -1,0 +1,31 @@
+{
+ "name": "STK5_all13_w075",
+ "neural": [],
+ "blend": [
+  "E2_a1_full",
+  "E2b_a1_full_seed1",
+  "E2c_a1_full_seed2",
+  "E2d_a1_full_hard",
+  "E1_a3_lorma",
+  "E1b_a3_lorma_seed1",
+  "E3_a4_partial",
+  "E3b_a4_partial_seed1",
+  "E5_a3_ia3",
+  "E4_a2_qlora",
+  "E6_a1_prefix",
+  "E7_a4_prompt",
+  "K1_kd_a1_4l"
+ ],
+ "w": 0.75,
+ "depth": 100,
+ "trees": 600,
+ "lr": 0.03,
+ "leaves": 15,
+ "refit": true,
+ "dev": {
+  "f1": 0.4914,
+  "p": 0.5351,
+  "r": 0.4543
+ },
+ "zip": "/home/manish/capstone_llm/p7/submissions/STK5_all13_w075_20261106_182110.zip"
+}

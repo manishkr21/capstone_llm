@@ -1,0 +1,4 @@
+# V3: partial fine-tuning (top 4 of 8 blocks) on A1; E1 full fine-tuning peaked at step 2750 then declined
+inherit: e6_a4_partial.yaml
+run_name: V3_a1_partial
+model: {phase1_ckpt: runs/A1_gpt_clean_1B/best.pt}

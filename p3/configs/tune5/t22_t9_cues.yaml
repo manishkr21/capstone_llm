@@ -1,0 +1,5 @@
+# T22: T9 (A3 rsLoRA) + lexical cue flags (citations, speaker, court level; rr/data.py CUES) for the most-confused roles
+inherit: ../tune2/t9_e3_ep20_tau05.yaml
+run_name: T22_t9_cues
+model:
+  cues: true

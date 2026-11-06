@@ -1,0 +1,23 @@
+{
+  "run": "V5_e6_attnpool",
+  "total_params": 88017924,
+  "trainable_params": 25683972,
+  "trainable_pct": 29.18,
+  "val": {
+    "macro_f1": 0.7535188815690259,
+    "macro_p": 0.7535303643724696,
+    "macro_r": 0.7535211267605634
+  },
+  "val_f1_at_0.5": 0.7177859515899383,
+  "threshold": 0.37999999999999995,
+  "steps": 3960,
+  "train_min": 55.9,
+  "test_infer_s": 20.7,
+  "peak_gpu_gb": 2.39,
+  "ckpt_mb": 102.7,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

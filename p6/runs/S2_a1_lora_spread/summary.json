@@ -1,0 +1,29 @@
+{
+ "run": "S2_a1_lora_spread",
+ "total_params": 86419968,
+ "trainable_params": 5139456,
+ "trainable_pct": 5.947,
+ "val_loss": 2.145046124871488,
+ "val_metrics": {
+  "rouge1_f1": 0.5047,
+  "rougeL_f1": 0.2461,
+  "words": 470.7333,
+  "distinct_trigram": 0.9997,
+  "bertscore_f1": 0.8452,
+  "bertscore_p": 0.8439,
+  "bertscore_r": 0.8467
+ },
+ "train_min": 32.5,
+ "peak_gb": 4.71,
+ "decode_s_per_doc": 0.829,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 32,
+  "val_docs": 300
+ },
+ "zip": "S2_a1_lora_spread_20261029_134815.zip"
+}

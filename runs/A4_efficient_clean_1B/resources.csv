@@ -1,0 +1,135 @@
+timestamp,unix_time,session,elapsed_min,window_s,n_polls,phase,step,cpu_pct,cpu_pct_max,proc_cpu_pct,cpu_cores,load_avg_1m,ram_used_gb,ram_total_gb,ram_pct,proc_rss_gb,gpu_name,gpu_util_pct,gpu_util_pct_max,gpu_mem_bw_pct,vram_used_gb,vram_total_gb,gpu_power_w,gpu_temp_c,torch_alloc_gb,torch_reserved_gb,torch_peak_alloc_gb
+2026-10-11T11:48:49,1791699529.2,20261011-114748,1.01,60.5,12,train,187,29.0,46.1,99.6,32,4.654,52.433,125.788,41.7,2.009,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.454,15.887,12.895
+2026-10-11T11:49:49,1791699589.7,20261011-114748,2.02,60.5,12,train,408,21.258,37.4,99.717,32,8.084,56.58,125.788,45.0,2.636,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.989,15.887,12.895
+2026-10-11T11:50:50,1791699650.2,20261011-114748,3.02,60.5,12,train,578,11.108,12.0,98.842,32,5.395,58.103,125.788,46.2,2.874,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.84,15.887,12.895
+2026-10-11T11:51:50,1791699710.7,20261011-114748,4.03,60.6,12,checkpoint,750,15.192,22.0,98.033,32,4.683,58.12,125.788,46.2,3.039,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.5,15.887,12.895
+2026-10-11T11:52:52,1791699772.0,20261011-114748,5.05,61.3,12,train,940,14.892,24.9,98.567,32,4.46,52.951,125.788,42.1,3.167,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.989,15.887,12.895
+2026-10-11T11:53:52,1791699832.5,20261011-114748,6.06,60.5,12,train,1111,9.133,11.4,97.675,32,3.689,51.693,125.788,41.1,3.245,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.967,15.887,12.895
+2026-10-11T11:54:53,1791699893.0,20261011-114748,7.07,60.5,12,train,1285,7.908,8.3,98.8,32,3.09,51.668,125.788,41.1,3.298,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.019,15.887,12.895
+2026-10-11T11:55:53,1791699953.6,20261011-114748,8.08,60.5,12,train,1474,7.883,8.7,99.767,32,2.798,51.394,125.788,40.9,3.337,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.989,15.887,12.895
+2026-10-11T11:56:54,1791700014.1,20261011-114748,9.09,60.5,12,train,1649,7.883,8.4,98.325,32,2.606,51.315,125.788,40.8,3.362,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.058,15.887,12.895
+2026-10-11T11:57:54,1791700074.6,20261011-114748,10.1,60.5,12,train,1825,8.125,10.2,98.075,32,2.722,51.312,125.788,40.8,3.465,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.263,15.887,12.895
+2026-10-11T11:58:55,1791700135.1,20261011-114748,11.11,60.5,12,train,2006,7.967,8.4,98.417,32,2.786,51.391,125.788,40.9,3.391,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.705,15.887,12.895
+2026-10-11T11:59:55,1791700195.7,20261011-114748,12.12,60.5,12,train,2206,8.167,8.8,99.725,32,2.592,51.3,125.788,40.8,3.4,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,4.598,15.887,12.895
+2026-10-11T12:00:56,1791700256.2,20261011-114748,13.12,60.5,12,train,2386,7.95,8.3,98.725,32,2.57,51.492,125.788,40.9,3.405,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.019,15.887,12.895
+2026-10-11T12:01:56,1791700316.7,20261011-114748,14.13,60.5,12,train,2549,8.108,8.7,98.408,32,2.454,51.283,125.788,40.8,3.499,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,10.942,15.887,12.895
+2026-10-11T12:02:57,1791700377.2,20261011-114748,15.14,60.5,12,train,2749,8.1,9.1,99.742,32,2.468,51.493,125.788,40.9,3.41,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.988,15.887,12.895
+2026-10-11T12:03:57,1791700437.8,20261011-114748,16.15,60.5,12,train,2926,10.633,15.3,98.083,32,2.553,51.548,125.788,41.0,3.411,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.953,15.887,12.895
+2026-10-11T12:04:58,1791700498.3,20261011-114748,17.16,60.5,12,train,3105,11.858,14.6,98.392,32,3.305,50.947,125.788,40.5,3.412,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.557,15.887,12.895
+2026-10-11T12:05:58,1791700558.8,20261011-114748,18.17,60.5,12,train,3271,10.167,11.9,98.2,32,3.63,51.593,125.788,41.0,3.413,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.58,15.887,12.895
+2026-10-11T12:06:59,1791700619.3,20261011-114748,19.18,60.5,12,train,3457,7.825,8.5,99.75,32,2.926,51.437,125.788,40.9,3.414,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.92,15.887,12.895
+2026-10-11T12:07:59,1791700679.8,20261011-114748,20.18,60.5,12,train,3636,7.85,8.4,98.2,32,2.509,51.235,125.788,40.7,3.414,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.853,15.887,12.895
+2026-10-11T12:09:00,1791700740.3,20261011-114748,21.19,60.5,12,train,3815,7.867,8.5,98.533,32,2.338,51.505,125.788,40.9,3.414,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.988,15.887,12.895
+2026-10-11T12:10:00,1791700800.8,20261011-114748,22.2,60.5,12,checkpoint,4000,7.908,8.4,99.0,32,2.346,51.257,125.788,40.7,3.414,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,10.942,15.887,12.895
+2026-10-11T12:11:01,1791700861.3,20261011-114748,23.21,60.5,12,train,4193,8.067,8.6,98.783,32,2.294,51.437,125.788,40.9,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.232,15.887,12.895
+2026-10-11T12:12:01,1791700921.8,20261011-114748,24.22,60.5,12,train,4360,7.933,8.5,98.775,32,2.524,51.355,125.788,40.8,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.988,15.887,12.895
+2026-10-11T12:13:02,1791700982.3,20261011-114748,25.23,60.5,12,train,4544,7.867,8.3,98.75,32,2.415,51.255,125.788,40.7,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.122,15.887,12.895
+2026-10-11T12:14:02,1791701042.8,20261011-114748,26.24,60.5,12,train,4743,8.008,8.7,99.733,32,2.326,51.15,125.788,40.7,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,10.942,15.887,12.895
+2026-10-11T12:15:03,1791701103.3,20261011-114748,27.24,60.5,12,train,4922,7.908,8.4,98.508,32,2.137,51.418,125.788,40.9,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,10.611,15.887,12.895
+2026-10-11T12:16:03,1791701163.9,20261011-114748,28.25,60.5,12,train,5099,8.058,9.1,98.383,32,2.385,51.207,125.788,40.7,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.989,15.887,12.895
+2026-10-11T12:17:04,1791701224.4,20261011-114748,29.26,60.5,12,train,5271,12.325,16.8,98.167,32,3.063,51.343,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.012,15.887,12.895
+2026-10-11T12:18:04,1791701284.9,20261011-114748,30.27,60.5,12,train,5457,11.45,12.8,99.817,32,3.572,51.314,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.019,15.887,12.895
+2026-10-11T12:19:05,1791701345.4,20261011-114748,31.28,60.5,12,train,5628,8.675,12.1,98.15,32,3.534,51.643,125.788,41.1,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,7.035,15.887,12.895
+2026-10-11T12:20:05,1791701405.9,20261011-114748,32.29,60.5,12,train,5809,7.9,8.4,98.458,32,3.32,51.284,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.183,15.887,12.895
+2026-10-11T12:21:06,1791701466.4,20261011-114748,33.29,60.5,12,checkpoint,6000,7.95,8.5,99.133,32,2.699,51.439,125.788,40.9,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.967,15.887,12.895
+2026-10-11T12:22:06,1791701526.9,20261011-114748,34.3,60.5,12,train,6189,7.883,8.3,98.342,32,2.275,51.483,125.788,40.9,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.525,15.887,12.895
+2026-10-11T12:23:07,1791701587.4,20261011-114748,35.31,60.5,12,train,6355,7.842,8.4,98.3,32,2.388,51.423,125.788,40.9,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.058,15.887,12.895
+2026-10-11T12:24:07,1791701647.9,20261011-114748,36.32,60.5,12,train,6533,7.925,8.3,98.192,32,2.608,51.368,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.012,15.887,12.895
+2026-10-11T12:25:08,1791701708.4,20261011-114748,37.33,60.5,12,train,6733,7.9,8.4,99.783,32,2.333,51.349,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.989,15.887,12.895
+2026-10-11T12:26:08,1791701768.9,20261011-114748,38.34,60.5,12,train,6911,7.933,8.4,98.25,32,2.359,51.315,125.788,40.8,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.558,15.887,12.895
+2026-10-11T12:27:09,1791701829.6,20261011-114748,39.35,60.6,12,train,7092,7.925,8.3,98.108,32,2.73,51.23,125.788,40.7,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.019,15.887,12.895
+2026-10-11T12:28:10,1791701890.1,20261011-114748,40.36,60.5,12,train,7256,7.958,8.4,98.108,32,2.465,51.196,125.788,40.7,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.571,15.887,12.895
+2026-10-11T12:29:10,1791701950.6,20261011-114748,41.36,60.5,12,train,7458,11.592,16.6,99.75,32,2.829,51.541,125.788,41.0,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.454,15.887,12.895
+2026-10-11T12:30:11,1791702011.1,20261011-114748,42.37,60.6,12,train,7634,11.783,14.3,98.117,32,3.861,51.022,125.788,40.6,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.588,15.887,12.895
+2026-10-11T12:31:11,1791702071.7,20261011-114748,43.38,60.5,12,train,7805,9.408,11.3,98.9,32,3.391,51.749,125.788,41.1,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.058,15.887,12.895
+2026-10-11T12:32:12,1791702132.2,20261011-114748,44.39,60.5,12,checkpoint,8000,7.958,8.7,99.767,32,2.677,51.39,125.788,40.9,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,7.085,15.887,12.895
+2026-10-11T12:33:12,1791702192.7,20261011-114748,45.4,60.5,12,train,8173,8.108,8.8,99.017,32,2.804,51.61,125.788,41.0,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.996,15.887,12.895
+2026-10-11T12:34:13,1791702253.2,20261011-114748,46.41,60.5,12,train,8349,8.067,8.9,98.842,32,2.6,51.569,125.788,41.0,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.09,15.887,12.895
+2026-10-11T12:35:13,1791702313.7,20261011-114748,47.42,60.5,12,train,8529,7.95,8.6,98.592,32,2.378,51.429,125.788,40.9,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,10.942,15.887,12.895
+2026-10-11T12:36:14,1791702374.2,20261011-114748,48.43,60.5,12,train,8726,7.992,9.1,99.775,32,2.208,51.31,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.511,15.887,12.895
+2026-10-11T12:37:14,1791702434.7,20261011-114748,49.43,60.5,12,train,8906,7.908,8.5,99.0,32,2.277,51.312,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.019,15.887,12.895
+2026-10-11T12:38:15,1791702495.3,20261011-114748,50.44,60.5,12,train,9069,7.992,9.0,98.55,32,2.198,51.222,125.788,40.7,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,4.282,15.887,12.895
+2026-10-11T12:39:15,1791702555.8,20261011-114748,51.45,60.5,12,train,9251,7.9,8.6,99.067,32,2.556,51.307,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.63,15.887,12.895
+2026-10-11T12:40:16,1791702616.3,20261011-114748,52.46,60.5,12,train,9453,7.908,8.8,99.75,32,2.471,51.245,125.788,40.7,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.219,15.887,12.895
+2026-10-11T12:41:16,1791702676.8,20261011-114748,53.47,60.5,12,train,9630,9.283,15.2,98.283,32,2.444,51.535,125.788,41.0,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,10.942,15.887,12.895
+2026-10-11T12:42:17,1791702737.4,20261011-114748,54.48,60.6,12,train,9810,11.758,13.7,98.633,32,3.317,51.594,125.788,41.0,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.989,15.887,12.895
+2026-10-11T12:43:17,1791702797.9,20261011-114748,55.49,60.5,12,train,9997,11.192,12.6,99.792,32,3.658,51.355,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.755,15.887,12.895
+2026-10-11T12:44:18,1791702858.4,20261011-114748,56.5,60.5,12,train,10165,7.933,8.5,98.375,32,3.01,51.642,125.788,41.1,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.153,15.887,12.895
+2026-10-11T12:45:18,1791702919.0,20261011-114748,57.5,60.5,12,train,10345,7.833,8.1,98.892,32,2.581,51.641,125.788,41.1,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.454,15.887,12.895
+2026-10-11T12:46:19,1791702979.5,20261011-114748,58.51,60.6,12,train,10522,7.942,8.5,98.65,32,2.564,51.274,125.788,40.8,3.506,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.996,15.887,12.895
+2026-10-11T12:47:20,1791703040.1,20261011-114748,59.52,60.5,12,train,10723,7.975,9.0,99.717,32,2.344,51.286,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.548,15.887,12.895
+2026-10-11T12:48:20,1791703100.6,20261011-114748,60.53,60.5,12,train,10890,7.875,8.4,98.242,32,2.157,51.43,125.788,40.9,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.297,15.887,12.895
+2026-10-11T12:49:21,1791703161.1,20261011-114748,61.54,60.5,12,train,11065,7.892,8.3,97.967,32,2.323,51.442,125.788,40.9,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,3.942,15.887,12.895
+2026-10-11T12:50:21,1791703221.6,20261011-114748,62.55,60.5,12,checkpoint,11250,7.858,8.6,99.067,32,2.356,50.992,125.788,40.5,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,5.996,15.887,12.895
+2026-10-11T12:51:22,1791703283.0,20261011-114748,63.57,61.4,12,train,11493,8.675,14.3,99.317,32,2.293,51.348,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.019,15.887,12.895
+2026-10-11T12:52:23,1791703343.5,20261011-114748,64.58,60.5,12,checkpoint,11750,8.042,16.9,98.092,32,2.505,51.114,125.788,40.6,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.755,15.887,12.895
+2026-10-11T12:53:23,1791703404.0,20261011-114748,65.59,60.5,12,train,11970,8.742,14.9,99.133,32,2.513,51.306,125.788,40.8,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,6.019,15.887,12.895
+2026-10-11T12:54:24,1791703464.4,20261011-114748,66.6,60.5,12,train,12174,11.867,13.7,98.85,32,3.191,50.923,125.788,40.5,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,8.058,15.887,12.895
+2026-10-11T12:54:57,1791703497.5,20261011-114748,67.15,33.0,7,train,12260,12.6,19.8,94.7,32,3.603,50.53,125.788,40.2,3.415,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,7.082,15.887,12.895

@@ -1,0 +1,8 @@
+# Knowledge distillation: A4 student with 6 of its 10 blocks (keeps the global layers 2, 5, 8), fully
+# fine-tuned on gold labels + the softened logits of the teacher E6 (A4 partial, best single model).
+inherit: base.yaml
+run_name: E8_kd_a4_small
+model: {phase1_ckpt: runs/A4_efficient_clean_1B/best.pt, keep_layers: [0, 2, 4, 5, 6, 8]}
+peft: {method: full}
+train: {lr: 5.0e-5}
+distill: {teacher_logits: runs/E6_a4_partial/train_logits.npy, alpha: 0.5, temperature: 2.0}

@@ -1,0 +1,413 @@
+{
+  "run": "T14_t8_win1024",
+  "fold": 2,
+  "total_params": 84437712,
+  "trainable_params": 2370768,
+  "trainable_pct": 2.808,
+  "best_dev_macro_f1": 0.524425,
+  "dev": {
+    "all": {
+      "macro_f1": 0.524425,
+      "macro_p": 0.5472833333333333,
+      "macro_r": 0.5674833333333333,
+      "accuracy": 0.6194283769989792,
+      "per_label": {
+        "ArgumentPetitioner": {
+          "p": 0.5129,
+          "r": 0.6513,
+          "f1": 0.5739,
+          "gold": 519,
+          "pred": 659
+        },
+        "ArgumentRespondent": {
+          "p": 0.745,
+          "r": 0.6702,
+          "f1": 0.7056,
+          "gold": 667,
+          "pred": 600
+        },
+        "Dissent": {
+          "p": 0.2963,
+          "r": 0.0343,
+          "f1": 0.0615,
+          "gold": 233,
+          "pred": 27
+        },
+        "Fact": {
+          "p": 0.8549,
+          "r": 0.6297,
+          "f1": 0.7252,
+          "gold": 1993,
+          "pred": 1468
+        },
+        "Issue": {
+          "p": 0.25,
+          "r": 0.6818,
+          "f1": 0.3659,
+          "gold": 22,
+          "pred": 60
+        },
+        "None": {
+          "p": 0.3571,
+          "r": 0.4412,
+          "f1": 0.3947,
+          "gold": 68,
+          "pred": 84
+        },
+        "PrecedentNotReliedUpon": {
+          "p": 0.291,
+          "r": 0.4483,
+          "f1": 0.3529,
+          "gold": 174,
+          "pred": 268
+        },
+        "PrecedentReliedUpon": {
+          "p": 0.4295,
+          "r": 0.5275,
+          "f1": 0.4735,
+          "gold": 491,
+          "pred": 603
+        },
+        "RatioOfTheDecision": {
+          "p": 0.5193,
+          "r": 0.7759,
+          "f1": 0.6222,
+          "gold": 1129,
+          "pred": 1687
+        },
+        "RulingByLowerCourt": {
+          "p": 0.7642,
+          "r": 0.2832,
+          "f1": 0.4133,
+          "gold": 286,
+          "pred": 106
+        },
+        "RulingByPresentCourt": {
+          "p": 0.7206,
+          "r": 0.7903,
+          "f1": 0.7538,
+          "gold": 62,
+          "pred": 68
+        },
+        "Statute": {
+          "p": 0.8266,
+          "r": 0.8761,
+          "f1": 0.8506,
+          "gold": 234,
+          "pred": 248
+        }
+      }
+    },
+    "CL": {
+      "macro_f1": 0.45445,
+      "macro_p": 0.5030416666666667,
+      "macro_r": 0.5029333333333333,
+      "accuracy": 0.6143060836501901,
+      "per_label": {
+        "ArgumentPetitioner": {
+          "p": 0.4871,
+          "r": 0.6476,
+          "f1": 0.556,
+          "gold": 349,
+          "pred": 464
+        },
+        "ArgumentRespondent": {
+          "p": 0.792,
+          "r": 0.7255,
+          "f1": 0.7573,
+          "gold": 572,
+          "pred": 524
+        },
+        "Dissent": {
+          "p": 0.2963,
+          "r": 0.0343,
+          "f1": 0.0615,
+          "gold": 233,
+          "pred": 27
+        },
+        "Fact": {
+          "p": 0.8643,
+          "r": 0.6084,
+          "f1": 0.7141,
+          "gold": 1675,
+          "pred": 1179
+        },
+        "Issue": {
+          "p": 0.0645,
+          "r": 0.5,
+          "f1": 0.1143,
+          "gold": 4,
+          "pred": 31
+        },
+        "None": {
+          "p": 0.5833,
+          "r": 0.28,
+          "f1": 0.3784,
+          "gold": 25,
+          "pred": 12
+        },
+        "PrecedentNotReliedUpon": {
+          "p": 0.0,
+          "r": 0.0,
+          "f1": 0.0,
+          "gold": 0,
+          "pred": 30
+        },
+        "PrecedentReliedUpon": {
+          "p": 0.3385,
+          "r": 0.4962,
+          "f1": 0.4025,
+          "gold": 264,
+          "pred": 387
+        },
+        "RatioOfTheDecision": {
+          "p": 0.4538,
+          "r": 0.824,
+          "f1": 0.5853,
+          "gold": 733,
+          "pred": 1331
+        },
+        "RulingByLowerCourt": {
+          "p": 0.64,
+          "r": 0.16,
+          "f1": 0.256,
+          "gold": 200,
+          "pred": 50
+        },
+        "RulingByPresentCourt": {
+          "p": 0.6667,
+          "r": 0.8148,
+          "f1": 0.7333,
+          "gold": 27,
+          "pred": 33
+        },
+        "Statute": {
+          "p": 0.85,
+          "r": 0.9444,
+          "f1": 0.8947,
+          "gold": 126,
+          "pred": 140
+        }
+      }
+    },
+    "IT": {
+      "macro_f1": 0.6051363636363637,
+      "macro_p": 0.609709090909091,
+      "macro_r": 0.6210363636363636,
+      "accuracy": 0.6323353293413174,
+      "per_label": {
+        "ArgumentPetitioner": {
+          "p": 0.5744,
+          "r": 0.6588,
+          "f1": 0.6137,
+          "gold": 170,
+          "pred": 195
+        },
+        "ArgumentRespondent": {
+          "p": 0.4211,
+          "r": 0.3368,
+          "f1": 0.3743,
+          "gold": 95,
+          "pred": 76
+        },
+        "Fact": {
+          "p": 0.8166,
+          "r": 0.7421,
+          "f1": 0.7776,
+          "gold": 318,
+          "pred": 289
+        },
+        "Issue": {
+          "p": 0.4483,
+          "r": 0.7222,
+          "f1": 0.5532,
+          "gold": 18,
+          "pred": 29
+        },
+        "None": {
+          "p": 0.3194,
+          "r": 0.5349,
+          "f1": 0.4,
+          "gold": 43,
+          "pred": 72
+        },
+        "PrecedentNotReliedUpon": {
+          "p": 0.3277,
+          "r": 0.4483,
+          "f1": 0.3786,
+          "gold": 174,
+          "pred": 238
+        },
+        "PrecedentReliedUpon": {
+          "p": 0.5926,
+          "r": 0.5639,
+          "f1": 0.5779,
+          "gold": 227,
+          "pred": 216
+        },
+        "RatioOfTheDecision": {
+          "p": 0.764,
+          "r": 0.6869,
+          "f1": 0.7234,
+          "gold": 396,
+          "pred": 356
+        },
+        "RulingByLowerCourt": {
+          "p": 0.875,
+          "r": 0.5698,
+          "f1": 0.6901,
+          "gold": 86,
+          "pred": 56
+        },
+        "RulingByPresentCourt": {
+          "p": 0.7714,
+          "r": 0.7714,
+          "f1": 0.7714,
+          "gold": 35,
+          "pred": 35
+        },
+        "Statute": {
+          "p": 0.7963,
+          "r": 0.7963,
+          "f1": 0.7963,
+          "gold": 108,
+          "pred": 108
+        }
+      }
+    }
+  },
+  "confusion": {
+    "Fact": {
+      "Fact": 1255,
+      "RatioOfTheDecision": 360,
+      "PrecedentReliedUpon": 165,
+      "ArgumentPetitioner": 96,
+      "ArgumentRespondent": 23,
+      "PrecedentNotReliedUpon": 22,
+      "RulingByLowerCourt": 17,
+      "None": 16,
+      "Dissent": 15,
+      "Statute": 15,
+      "Issue": 9
+    },
+    "ArgumentPetitioner": {
+      "ArgumentPetitioner": 338,
+      "ArgumentRespondent": 67,
+      "RatioOfTheDecision": 35,
+      "PrecedentReliedUpon": 31,
+      "PrecedentNotReliedUpon": 25,
+      "Fact": 14,
+      "Statute": 5,
+      "Issue": 4
+    },
+    "RatioOfTheDecision": {
+      "RatioOfTheDecision": 876,
+      "PrecedentReliedUpon": 84,
+      "ArgumentRespondent": 40,
+      "Fact": 35,
+      "ArgumentPetitioner": 24,
+      "Statute": 19,
+      "PrecedentNotReliedUpon": 15,
+      "None": 15,
+      "Issue": 13,
+      "RulingByPresentCourt": 5,
+      "RulingByLowerCourt": 3
+    },
+    "RulingByPresentCourt": {
+      "RulingByPresentCourt": 49,
+      "RatioOfTheDecision": 9,
+      "None": 4
+    },
+    "ArgumentRespondent": {
+      "ArgumentRespondent": 447,
+      "ArgumentPetitioner": 119,
+      "PrecedentNotReliedUpon": 35,
+      "Fact": 34,
+      "PrecedentReliedUpon": 22,
+      "RatioOfTheDecision": 9,
+      "None": 1
+    },
+    "Issue": {
+      "Issue": 15,
+      "RatioOfTheDecision": 2,
+      "None": 2,
+      "Fact": 1,
+      "PrecedentReliedUpon": 1,
+      "Statute": 1
+    },
+    "Dissent": {
+      "RatioOfTheDecision": 116,
+      "Fact": 35,
+      "ArgumentPetitioner": 34,
+      "Issue": 11,
+      "PrecedentReliedUpon": 10,
+      "ArgumentRespondent": 10,
+      "Dissent": 8,
+      "Statute": 3,
+      "RulingByPresentCourt": 3,
+      "RulingByLowerCourt": 2,
+      "None": 1
+    },
+    "RulingByLowerCourt": {
+      "RatioOfTheDecision": 126,
+      "RulingByLowerCourt": 81,
+      "Fact": 27,
+      "PrecedentNotReliedUpon": 23,
+      "ArgumentPetitioner": 16,
+      "None": 7,
+      "Issue": 3,
+      "RulingByPresentCourt": 3
+    },
+    "None": {
+      "None": 30,
+      "RatioOfTheDecision": 15,
+      "PrecedentReliedUpon": 7,
+      "Fact": 6,
+      "RulingByPresentCourt": 3,
+      "ArgumentPetitioner": 2,
+      "PrecedentNotReliedUpon": 2,
+      "Dissent": 1,
+      "Issue": 1,
+      "ArgumentRespondent": 1
+    },
+    "Statute": {
+      "Statute": 205,
+      "RatioOfTheDecision": 12,
+      "None": 4,
+      "ArgumentPetitioner": 4,
+      "PrecedentReliedUpon": 3,
+      "PrecedentNotReliedUpon": 2,
+      "Issue": 2,
+      "ArgumentRespondent": 1,
+      "Fact": 1
+    },
+    "PrecedentReliedUpon": {
+      "PrecedentReliedUpon": 259,
+      "RatioOfTheDecision": 107,
+      "PrecedentNotReliedUpon": 66,
+      "Fact": 43,
+      "ArgumentPetitioner": 5,
+      "Dissent": 3,
+      "None": 3,
+      "RulingByPresentCourt": 3,
+      "ArgumentRespondent": 2
+    },
+    "PrecedentNotReliedUpon": {
+      "PrecedentNotReliedUpon": 78,
+      "ArgumentPetitioner": 21,
+      "PrecedentReliedUpon": 21,
+      "RatioOfTheDecision": 20,
+      "Fact": 17,
+      "ArgumentRespondent": 9,
+      "RulingByLowerCourt": 3,
+      "Issue": 2,
+      "RulingByPresentCourt": 2,
+      "None": 1
+    }
+  },
+  "train_min": 10.68,
+  "steps": 560,
+  "dev_infer_s": 3.91,
+  "peak_gpu_gb": 3.22,
+  "ckpt_mb": 9.5
+}

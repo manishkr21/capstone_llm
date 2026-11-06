@@ -1,0 +1,30 @@
+{
+  "run_name": "A4_efficient_clean",
+  "arch": "efficient",
+  "description": "Efficient decoder: RoPE, RMSNorm, SwiGLU, grouped-query + sliding-window attention",
+  "params_total": 87506688,
+  "params_non_embedding": 62930688,
+  "best_val_loss": 2.293519002199173,
+  "best_val_ppl": 9.909748822908808,
+  "steps": 3000,
+  "tokens_seen": 196608000,
+  "train_seconds_this_session": 904.8757359981537,
+  "block_size": 1024,
+  "eval_prefix_len": 768,
+  "peak_gpu_mem_gb": 13.846436352,
+  "distilled_from": null,
+  "compute": {
+    "monitored_hours": 0.251,
+    "sessions": 1,
+    "gpu_name": "Failed to initialize NVML: Driver/library version mismatch\nNVML library version: 580.178",
+    "gpu_hours": 0.251,
+    "mean_cpu_pct": 8.15,
+    "mean_gpu_util_pct": null,
+    "peak_ram_gb": 51.673,
+    "peak_proc_rss_gb": 3.486,
+    "peak_vram_gb": null,
+    "peak_torch_alloc_gb": 12.895,
+    "mean_gpu_power_w": null,
+    "energy_kwh": null
+  }
+}

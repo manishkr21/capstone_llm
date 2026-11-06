@@ -1,0 +1,5 @@
+timestamp,unix_time,session,elapsed_min,window_s,n_polls,phase,step,cpu_pct,cpu_pct_max,proc_cpu_pct,cpu_cores,load_avg_1m,ram_used_gb,ram_total_gb,ram_pct,proc_rss_gb,gpu_name,gpu_util_pct,gpu_util_pct_max,gpu_mem_bw_pct,vram_used_gb,vram_total_gb,gpu_power_w,gpu_temp_c,torch_alloc_gb,torch_reserved_gb,torch_peak_alloc_gb
+2026-09-26T21:05:27,1790436927.4,20260926-210427,1.0,60.1,12,generate_test,,3.75,4.8,105.542,32,1.759,42.778,125.788,34.0,1.427,NVIDIA H200 NVL,68.917,75,10.0,14.724,140.401,192.797,41,0.869,3.771,1.108
+2026-09-26T21:05:36,1790436936.4,20260926-210427,1.15,9.0,2,generate_test,,4.05,4.2,100.05,32,1.826,42.723,125.788,34.0,1.427,NVIDIA H200 NVL,61.5,66,9.0,15.556,140.401,178.227,41,0.786,4.604,1.184
+2026-09-26T22:28:51,1790441931.9,20260926-222751,1.0,60.1,12,generate_test,,3.717,4.6,105.675,32,1.255,42.827,125.788,34.0,1.428,NVIDIA H200 NVL,68.167,70,10.333,14.724,140.401,195.892,42,0.885,3.771,1.108
+2026-09-26T22:29:00,1790441940.3,20260926-222751,1.14,8.4,2,generate_test,,4.15,4.2,100.3,32,1.186,42.753,125.788,34.0,1.428,NVIDIA H200 NVL,62.5,68,9.5,15.556,140.401,178.464,42,0.88,4.604,1.184

@@ -1,0 +1,25 @@
+{
+ "run_name": "E7_a4_prompt",
+ "params": {
+  "total_params": 87718912,
+  "trainable_params": 212224,
+  "trainable_pct": 0.242
+ },
+ "train_min": 19.4,
+ "dev_encode_sec": 6.6,
+ "dev_neural": {
+  "f1": 0.3357,
+  "p": 0.3656,
+  "r": 0.3104
+ },
+ "dev_fused": {
+  "f1": 0.4614,
+  "lam": 1.0,
+  "pen": 2.0
+ },
+ "dev_lexical": 0.4525,
+ "peak_mem_gb": 25.9,
+ "ckpt_mb": 0.9,
+ "zip_neural": "/home/manish/capstone_llm/p7/submissions/E7_a4_prompt_neural_20261104_030353.zip",
+ "zip_fused": "/home/manish/capstone_llm/p7/submissions/E7_a4_prompt_fused_20261104_030353.zip"
+}

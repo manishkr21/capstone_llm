@@ -1,0 +1,13 @@
+train docs 726497 val docs 2883
+exact duplicate train docs 0 (0.0%)
+extra docs sharing their first 300 chars 1708
+val docs exactly in train 0
+val docs with >50% 13-gram overlap vs a 30k-train sample: 0/500
+acts {'n': 13577, 'mojibake/U+FFFD': 40, '<200 words': 304, 'has devanagari': 33, 'urls': 103, '>30% 1-char words': 5}
+supreme_court {'n': 53995, 'word repeated 10x': 42, 'urls': 232, 'has devanagari': 29, '<200 words': 1541, 'OCR stutter >=5': 16, 'stutter words': 264442, '>30% 1-char words': 1, 'mojibake/U+FFFD': 1}
+high_courts {'n': 480572, '<200 words': 125721, 'has devanagari': 281, 'word repeated 10x': 49, 'urls': 14265, 'OCR stutter >=5': 8, 'stutter words': 43780, 'long ---/... runs': 233, '>30% 1-char words': 305, 'mojibake/U+FFFD': 93, '>20% non-ascii': 1}
+tribunals {'n': 178353, '<200 words': 17707, 'urls': 7913, 'word repeated 10x': 21, 'has devanagari': 22774, '>30% 1-char words': 16, 'long ---/... runs': 5, 'mojibake/U+FFFD': 29, '>20% non-ascii': 841, 'OCR stutter >=5': 1, 'stutter words': 6591}
+acts median words 2543 p10 418
+supreme_court median words 2376 p10 446
+high_courts median words 307.0 p10 136
+tribunals median words 571 p10 200

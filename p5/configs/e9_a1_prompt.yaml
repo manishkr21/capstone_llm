@@ -1,0 +1,5 @@
+inherit: base.yaml
+run_name: E9_a1_prompt
+model: {phase1_ckpt: runs/A1_gpt_clean_1B/best.pt}
+peft: {method: prompt, n_prompt: 20}
+train: {lr: 3.0e-3}

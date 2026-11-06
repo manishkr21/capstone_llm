@@ -1,0 +1,31 @@
+run_name: S2_a1_lora_spread
+seed: 0
+model:
+  phase1_ckpt: runs/A1_gpt_clean_1B/best.pt
+  src_len: 1280
+  tgt_len: 768
+  dropout: 0.1
+data:
+  strategy: spread
+  head_frac: 0.15
+peft:
+  method: lora
+  r: 32
+  alpha: 64
+train:
+  epochs: 4
+  lr: 0.0005
+  micro_batch: 4
+  grad_accum: 4
+  warmup: 100
+  weight_decay: 0.01
+  label_smoothing: 0.0
+  eval_batch: 8
+gen:
+  max_new_tokens: 800
+  min_new_tokens: 300
+  no_repeat_ngram: 3
+  repetition_penalty: 1.15
+  temperature: 0
+  batch_size: 32
+  val_docs: 300

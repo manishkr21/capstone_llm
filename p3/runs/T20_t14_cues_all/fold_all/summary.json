@@ -1,0 +1,11 @@
+{
+  "run": "T20_t14_cues_all",
+  "fold": "all",
+  "total_params": 84442576,
+  "trainable_params": 2375632,
+  "trainable_pct": 2.813,
+  "epochs": 13,
+  "train_docs": 90,
+  "train_min": 10.04,
+  "steps": 637
+}

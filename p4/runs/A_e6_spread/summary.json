@@ -1,0 +1,23 @@
+{
+  "run": "A_e6_spread",
+  "total_params": 88017155,
+  "trainable_params": 25683203,
+  "trainable_pct": 29.18,
+  "val": {
+    "macro_f1": 0.7776387644686031,
+    "macro_p": 0.7778020802955186,
+    "macro_r": 0.7776659959758552
+  },
+  "val_f1_at_0.5": 0.7541494963369964,
+  "threshold": 0.42999999999999994,
+  "steps": 3960,
+  "train_min": 35.5,
+  "test_infer_s": 20.7,
+  "peak_gpu_gb": 3.99,
+  "ckpt_mb": 102.7,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

@@ -1,0 +1,29 @@
+{
+ "run": "S9_a3_full_src6144",
+ "total_params": 81280512,
+ "trainable_params": 81280512,
+ "trainable_pct": 100.0,
+ "val_loss": 1.4757117137632338,
+ "val_metrics": {
+  "rouge1_f1": 0.5008,
+  "rougeL_f1": 0.2638,
+  "words": 398.4767,
+  "distinct_trigram": 0.9995,
+  "bertscore_f1": 0.8519,
+  "bertscore_p": 0.8525,
+  "bertscore_r": 0.8514
+ },
+ "train_min": 69.1,
+ "peak_gb": 14.82,
+ "decode_s_per_doc": 2.455,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 4,
+  "val_docs": 300
+ },
+ "zip": "S9_a3_full_src6144_20261103_171510.zip"
+}

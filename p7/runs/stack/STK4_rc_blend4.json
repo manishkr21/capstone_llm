@@ -1,0 +1,22 @@
+{
+ "name": "STK4_rc_blend4",
+ "neural": [],
+ "blend": [
+  "E2_a1_full",
+  "E1_a3_lorma",
+  "E3_a4_partial",
+  "E5_a3_ia3"
+ ],
+ "w": 0.5,
+ "depth": 100,
+ "trees": 600,
+ "lr": 0.03,
+ "leaves": 15,
+ "refit": true,
+ "dev": {
+  "f1": 0.4914,
+  "p": 0.5351,
+  "r": 0.4543
+ },
+ "zip": "/home/manish/capstone_llm/p7/submissions/STK4_rc_blend4_20261106_174207.zip"
+}

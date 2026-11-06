@@ -1,0 +1,5 @@
+# KD round 4: 6-block A4 student, teacher = 8-model ensemble (X3, W6, X1, W4, W2, W1, W5, W3), 8 epochs
+inherit: e10_kd_a4_small.yaml
+run_name: Y1_kd4_a4
+train: {epochs: 8, eval_every: 2000}
+distill: {teacher_logits: runs/TEACHER4_ens/train_logits.npy, alpha: 0.5, temperature: 2.0}

@@ -1,0 +1,5 @@
+run_name: F1_a4_full
+model:
+  phase1_ckpt: runs/A4_efficient_clean_1B/best.pt
+peft:
+  method: full

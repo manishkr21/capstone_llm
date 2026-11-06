@@ -1,0 +1,23 @@
+{
+  "run": "E5_a1_adalora",
+  "total_params": 83905091,
+  "trainable_params": 1838147,
+  "trainable_pct": 2.191,
+  "val": {
+    "macro_f1": 0.6000536480686696,
+    "macro_p": 0.6032159233442314,
+    "macro_r": 0.6016096579476862
+  },
+  "val_f1_at_0.5": 0.4367505505654121,
+  "threshold": 0.3999999999999999,
+  "steps": 3960,
+  "train_min": 71.4,
+  "test_infer_s": 7.1,
+  "peak_gpu_gb": 5.91,
+  "ckpt_mb": 7.4,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

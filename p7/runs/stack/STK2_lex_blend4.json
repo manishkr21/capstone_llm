@@ -1,0 +1,22 @@
+{
+ "name": "STK2_lex_blend4",
+ "neural": [],
+ "blend": [
+  "E2_a1_full",
+  "E1_a3_lorma",
+  "E3_a4_partial",
+  "E5_a3_ia3"
+ ],
+ "w": 0.3,
+ "depth": 100,
+ "trees": 600,
+ "lr": 0.03,
+ "leaves": 15,
+ "refit": true,
+ "dev": {
+  "f1": 0.4869,
+  "p": 0.5303,
+  "r": 0.4502
+ },
+ "zip": "/home/manish/capstone_llm/p7/submissions/STK2_lex_blend4_20261104_032450.zip"
+}

@@ -8,7 +8,7 @@ paths:
   runs_dir: runs          # one sub-folder per experiment (on Colab: a Drive folder)
 
 data:
-  local_dir: null         # folder that contains Phase_1_Pretraining/ if downloaded; null = stream from HF
+  local_dir: data/hf         # folder that contains Phase_1_Pretraining/ if downloaded; null = stream from HF
   json_path: null         # ijson prefix for unusual JSON layouts (auto-detected otherwise)
   text_field: null        # record key holding the text (auto-detected otherwise)
   sources:                # mixing ratios; set one to 0 to drop a source (ablation)

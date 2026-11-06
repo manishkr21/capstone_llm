@@ -1,0 +1,30 @@
+{
+ "run": "E6_a1_adalora",
+ "total_params": 86421504,
+ "trainable_params": 5140992,
+ "trainable_pct": 5.949,
+ "val_loss": null,
+ "val_metrics": {
+  "rouge1_f1": 0.5207,
+  "rougeL_f1": 0.248,
+  "words": 519.2933,
+  "distinct_trigram": 0.9996,
+  "bertscore_f1": 0.8463,
+  "bertscore_p": 0.8457,
+  "bertscore_r": 0.8471
+ },
+ "train_min": null,
+ "peak_gb": null,
+ "decode_s_per_doc": 0.913,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 32,
+  "val_docs": 300,
+  "tag": "rp"
+ },
+ "zip": "E6_a1_adalora_rp_20261029_123429.zip"
+}

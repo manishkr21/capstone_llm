@@ -1,0 +1,6 @@
+# T15: T8 with LoRA rank 32 (alpha 64, same scale)
+inherit: ../tune2/t8_e2_causal_ep20_tau05.yaml
+run_name: T15_t8_r32
+peft:
+  r: 32
+  alpha: 64

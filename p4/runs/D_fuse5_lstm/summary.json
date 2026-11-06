@@ -1,0 +1,28 @@
+{
+ "run": "D_fuse5_lstm",
+ "feats": [
+  "V1_e6_16ch",
+  "V2_e7_16ch",
+  "V3_a1_partial",
+  "W1_a4_full_16ch",
+  "W2_a4_top6_16ch"
+ ],
+ "layer": "lstm",
+ "val": {
+  "macro_f1": 0.7940180976721696,
+  "macro_p": 0.7991282162943851,
+  "macro_r": 0.7947686116700201
+ },
+ "val_f1_at_0.5": 0.7787050653594771,
+ "threshold": 0.6599999999999999,
+ "seed_f1_mean": 0.7895642523670898,
+ "seed_f1_std": 0.0015903658476608662,
+ "total_params": 1403395,
+ "trainable_params": 1403395,
+ "trainable_pct": 100.0,
+ "train_min": 81.2,
+ "data": {
+  "strategy": "cached-all",
+  "n_chunks": 48
+ }
+}

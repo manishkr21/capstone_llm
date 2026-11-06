@@ -1,0 +1,4 @@
+# E2 trained longer (3 -> 5 epochs)
+inherit: e2_a1_full.yaml
+run_name: V3_e2_ep5
+train: {epochs: 5, eval_every: 1300}

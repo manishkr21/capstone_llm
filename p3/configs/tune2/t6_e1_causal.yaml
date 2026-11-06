@@ -1,0 +1,5 @@
+# T6: E1 with causal attention only (isolates the attention effect on A4)
+inherit: ../e1_a4_lorma.yaml
+run_name: T6_e1_causal
+model:
+  attention: causal

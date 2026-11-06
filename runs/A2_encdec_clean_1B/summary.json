@@ -1,0 +1,30 @@
+{
+  "run_name": "A2_encdec_clean_1B",
+  "arch": "encdec",
+  "description": "Encoder-decoder: bidirectional prompt encoder + cross-attending decoder, sinusoidal positions",
+  "params_total": 89418240,
+  "params_non_embedding": 68938240,
+  "best_val_loss": 2.4639648675918577,
+  "best_val_ppl": 11.75131169047853,
+  "steps": 12260,
+  "tokens_seen": 803471360,
+  "train_seconds_this_session": 3495.6938831806183,
+  "block_size": 1024,
+  "eval_prefix_len": 768,
+  "peak_gpu_mem_gb": 18.136188416,
+  "distilled_from": null,
+  "compute": {
+    "monitored_hours": 0.971,
+    "sessions": 1,
+    "gpu_name": "Failed to initialize NVML: Driver/library version mismatch\nNVML library version: 580.178",
+    "gpu_hours": 0.971,
+    "mean_cpu_pct": 9.29,
+    "mean_gpu_util_pct": null,
+    "peak_ram_gb": 64.265,
+    "peak_proc_rss_gb": 11.681,
+    "peak_vram_gb": null,
+    "peak_torch_alloc_gb": 16.891,
+    "mean_gpu_power_w": null,
+    "energy_kwh": null
+  }
+}

@@ -1,0 +1,25 @@
+{
+ "run_name": "E3b_a4_partial_seed1",
+ "params": {
+  "total_params": 87703552,
+  "trainable_params": 25369600,
+  "trainable_pct": 28.927
+ },
+ "train_min": 13.9,
+ "dev_encode_sec": 6.9,
+ "dev_neural": {
+  "f1": 0.3691,
+  "p": 0.4019,
+  "r": 0.3412
+ },
+ "dev_fused": {
+  "f1": 0.4647,
+  "lam": 0.5,
+  "pen": 2.0
+ },
+ "dev_lexical": 0.4525,
+ "peak_mem_gb": 17.8,
+ "ckpt_mb": 101.5,
+ "zip_neural": "/home/manish/capstone_llm/p7/submissions/E3b_a4_partial_seed1_neural_20261106_180635.zip",
+ "zip_fused": "/home/manish/capstone_llm/p7/submissions/E3b_a4_partial_seed1_fused_20261106_180635.zip"
+}

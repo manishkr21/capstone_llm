@@ -1,0 +1,4 @@
+# E3 (A3 adapters) trained for 5 epochs
+inherit: e3_a3_adapter.yaml
+run_name: W3_a3_adapter_ep5
+train: {epochs: 5, eval_every: 1300}

@@ -1,0 +1,5 @@
+inherit: base.yaml
+run_name: E5_a4_partial
+model: {phase1_ckpt: runs/A4_efficient_clean_1B/best.pt}
+peft: {method: partial, n_train_layers: 4}
+train: {lr: 1.0e-4}

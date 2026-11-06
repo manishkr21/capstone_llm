@@ -1,0 +1,78 @@
+run_name: A2_encdec
+seed: 1337
+paths:
+  data_dir: data
+  runs_dir: runs
+data:
+  local_dir: data/hf
+  json_path: null
+  text_field: null
+  sources:
+    acts: 0.1
+    supreme_court: 0.3
+    high_courts: 0.35
+    tribunals: 0.25
+  train_tokens: 200000000
+  val_tokens: 5000000
+  tokens_per_word_estimate: 1.35
+  val_fraction: 0.01
+  doc_keep_prob: 0.5
+  min_words: 50
+  collapse_whitespace: true
+  n_dev_prompts: 200
+  prompt_words: 512
+  continuation_words: 128
+tokenizer:
+  type: bpe
+  vocab_size: 32000
+  min_frequency: 2
+  train_docs: 100000
+  path: data/tokenizer/legal_bpe.json
+model:
+  arch: encdec
+  d_model: 640
+  n_enc_layers: 6
+  n_dec_layers: 6
+  n_heads: 10
+  d_ff: 2560
+  dropout: 0.0
+train:
+  block_size: 1024
+  micro_batch_size: 8
+  grad_accum_steps: 8
+  max_steps: 3000
+  lr: 0.0006
+  min_lr: 6.0e-05
+  warmup_steps: 200
+  weight_decay: 0.1
+  betas:
+  - 0.9
+  - 0.95
+  grad_clip: 1.0
+  log_interval: 20
+  eval_interval: 250
+  eval_batches: 40
+  early_stop_patience: null
+  dtype: auto
+  device: auto
+  compile: false
+  resume: true
+  enforce_param_budget: true
+eval:
+  prefix_frac: 0.75
+distill: null
+monitor:
+  enabled: true
+  interval_seconds: 60
+  poll_seconds: 5
+generation:
+  temperature: 0.8
+  top_k: 50
+  top_p: 0.95
+  repetition_penalty: 1.1
+  repetition_window: 256
+  ban_eos: true
+  target_words: 128
+  max_new_tokens: 256
+  batch_size: 16
+  seed: 0

@@ -1,0 +1,6 @@
+# Diversity for the stacker: Y2 recipe (KD4, alpha 0.3) with a new seed, evidence chunks, 5 epochs
+inherit: y2_kd4_a4_alpha03.yaml
+run_name: Z1_kd4_evidence_s7
+seed: 7
+data: {strategy: evidence}
+train: {epochs: 5, eval_every: 1600}

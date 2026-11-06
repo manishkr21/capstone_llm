@@ -1,0 +1,47 @@
+{
+  "name": "C7_ens_8cues",
+  "members": [
+    "runs/T20_t14_cues",
+    "runs/T17_t8_hidden512",
+    "runs/T18_t8_seed2",
+    "runs/T19_t8_seed3",
+    "runs/T7_e1_causal_ep20_tau05",
+    "runs/T13_kd_t7",
+    "runs/T10_e5_qlora_causal",
+    "runs/T22_t9_cues"
+  ],
+  "oof_uncalibrated": {
+    "all": 0.5211,
+    "CL": 0.5248,
+    "IT": 0.5574
+  },
+  "oof_calibrated_nested": {
+    "all": 0.5213,
+    "CL": 0.5187,
+    "IT": 0.5502
+  },
+  "calibrated_P_R": [
+    0.5264,
+    0.5253
+  ],
+  "uncalibrated_P_R": [
+    0.5222,
+    0.5256
+  ],
+  "final_bias": {
+    "Fact": -0.25,
+    "Issue": -1.0,
+    "ArgumentPetitioner": 0.0,
+    "ArgumentRespondent": -0.75,
+    "Statute": -0.75,
+    "Dissent": 1.0,
+    "PrecedentReliedUpon": -0.75,
+    "PrecedentNotReliedUpon": 0.5,
+    "PrecedentOverruled": 0.0,
+    "RulingByLowerCourt": 0.75,
+    "RatioOfTheDecision": -1.0,
+    "RulingByPresentCourt": -0.75,
+    "None": -1.0
+  },
+  "in_sample_fit": 0.5414
+}

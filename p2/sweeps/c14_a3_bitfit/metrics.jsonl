@@ -1,0 +1,14 @@
+{"epoch": 1, "step": 93, "train_loss": 1.0141, "elapsed_s": 8.1, "macro_f1": 0.0709, "macro_p": 0.0878, "macro_r": 0.0644, "micro_f1": 0.1254, "span_only_f1": 0.1296}
+{"epoch": 2, "step": 185, "train_loss": 0.147, "elapsed_s": 18.3, "macro_f1": 0.2078, "macro_p": 0.2511, "macro_r": 0.2183, "micro_f1": 0.3253, "span_only_f1": 0.357}
+{"epoch": 3, "step": 277, "train_loss": 0.1136, "elapsed_s": 29.8, "macro_f1": 0.2711, "macro_p": 0.3135, "macro_r": 0.2694, "micro_f1": 0.3696, "span_only_f1": 0.4085}
+{"epoch": 4, "step": 370, "train_loss": 0.0989, "elapsed_s": 40.6, "macro_f1": 0.2846, "macro_p": 0.2812, "macro_r": 0.3092, "micro_f1": 0.393, "span_only_f1": 0.4638}
+{"epoch": 5, "step": 462, "train_loss": 0.0895, "elapsed_s": 56.1, "macro_f1": 0.2821, "macro_p": 0.3081, "macro_r": 0.2939, "micro_f1": 0.3698, "span_only_f1": 0.4362}
+{"epoch": 6, "step": 555, "train_loss": 0.0829, "elapsed_s": 71.3, "macro_f1": 0.2846, "macro_p": 0.3332, "macro_r": 0.2785, "micro_f1": 0.3798, "span_only_f1": 0.4187}
+{"epoch": 7, "step": 648, "train_loss": 0.0768, "elapsed_s": 83.5, "macro_f1": 0.2942, "macro_p": 0.3387, "macro_r": 0.2918, "micro_f1": 0.3936, "span_only_f1": 0.4414}
+{"epoch": 8, "step": 741, "train_loss": 0.0741, "elapsed_s": 93.6, "macro_f1": 0.2889, "macro_p": 0.3379, "macro_r": 0.2847, "micro_f1": 0.3832, "span_only_f1": 0.4348}
+{"epoch": 9, "step": 833, "train_loss": 0.0689, "elapsed_s": 103.2, "macro_f1": 0.3322, "macro_p": 0.3594, "macro_r": 0.3394, "micro_f1": 0.4059, "span_only_f1": 0.4754}
+{"epoch": 10, "step": 925, "train_loss": 0.0656, "elapsed_s": 117.7, "macro_f1": 0.3281, "macro_p": 0.3683, "macro_r": 0.3358, "micro_f1": 0.4135, "span_only_f1": 0.4694}
+{"epoch": 11, "step": 1017, "train_loss": 0.0644, "elapsed_s": 129.7, "macro_f1": 0.3267, "macro_p": 0.3604, "macro_r": 0.3309, "micro_f1": 0.419, "span_only_f1": 0.4831}
+{"epoch": 12, "step": 1110, "train_loss": 0.0623, "elapsed_s": 138.4, "macro_f1": 0.3322, "macro_p": 0.3655, "macro_r": 0.334, "micro_f1": 0.4179, "span_only_f1": 0.4843}
+{"epoch": 13, "step": 1202, "train_loss": 0.0616, "elapsed_s": 150.2, "macro_f1": 0.3277, "macro_p": 0.3587, "macro_r": 0.3301, "micro_f1": 0.4149, "span_only_f1": 0.4844}
+{"epoch": 14, "step": 1294, "train_loss": 0.0601, "elapsed_s": 162.3, "macro_f1": 0.3207, "macro_p": 0.3569, "macro_r": 0.3202, "micro_f1": 0.414, "span_only_f1": 0.483}

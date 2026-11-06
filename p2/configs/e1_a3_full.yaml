@@ -1,0 +1,9 @@
+# E1 - A3 prefix-LM, full fine-tuning. Whole window is the prefix -> bidirectional encoder.
+inherit: base.yaml
+run_name: E1_a3_full
+model:
+  phase1_ckpt: runs/A3_prefixlm/best.pt
+peft:
+  method: full
+train:
+  lr: 1.0e-4

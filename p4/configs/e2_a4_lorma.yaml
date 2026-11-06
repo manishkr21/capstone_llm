@@ -1,0 +1,5 @@
+inherit: base.yaml
+run_name: E2_a4_lorma
+model: {phase1_ckpt: runs/A4_efficient_clean_1B/best.pt}
+peft: {method: lorma, r: 16, alpha: 32, lora_dropout: 0.05, targets: [q, k, v, o, gate, up, proj]}
+train: {lr: 2.0e-4}

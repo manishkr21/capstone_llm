@@ -1,0 +1,5 @@
+# T17: T8 with a wider document layer (BiLSTM hidden 512)
+inherit: ../tune2/t8_e2_causal_ep20_tau05.yaml
+run_name: T17_t8_hidden512
+model:
+  hidden: 512

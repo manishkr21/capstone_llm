@@ -1,0 +1,8 @@
+# Ablation: E1 without context (one sentence per window, no BiLSTM, no CRF)
+inherit: e1_a4_lorma.yaml
+run_name: E0_a4_lorma_sentonly
+data:
+  context: none
+model:
+  doc_layer: none
+  crf: false

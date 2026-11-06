@@ -1,0 +1,5 @@
+inherit: base.yaml
+run_name: E4_a2_partial
+model: {phase1_ckpt: runs/A2_encdec_clean_1B/best.pt, encdec_output: decoder}
+peft: {method: partial, n_train_layers: 4}
+train: {lr: 1.0e-4}

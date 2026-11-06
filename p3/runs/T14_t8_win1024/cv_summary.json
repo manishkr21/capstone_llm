@@ -1,0 +1,47 @@
+{
+  "run": "T14_t8_win1024",
+  "oof": {
+    "all": {
+      "macro_f1": 0.5007,
+      "macro_p": 0.512,
+      "macro_r": 0.5156,
+      "accuracy": 0.6301
+    },
+    "CL": {
+      "macro_f1": 0.5123,
+      "macro_p": 0.5171,
+      "macro_r": 0.5523,
+      "accuracy": 0.6393
+    },
+    "IT": {
+      "macro_f1": 0.5323,
+      "macro_p": 0.5323,
+      "macro_r": 0.5383,
+      "accuracy": 0.6143
+    }
+  },
+  "oof_per_label": {
+    "ArgumentPetitioner": 0.5795,
+    "ArgumentRespondent": 0.5894,
+    "Dissent": 0.0514,
+    "Fact": 0.7417,
+    "Issue": 0.5706,
+    "None": 0.4897,
+    "PrecedentNotReliedUpon": 0.3166,
+    "PrecedentOverruled": 0.0,
+    "PrecedentReliedUpon": 0.5673,
+    "RatioOfTheDecision": 0.6499,
+    "RulingByLowerCourt": 0.4709,
+    "RulingByPresentCourt": 0.7121,
+    "Statute": 0.7705
+  },
+  "fold_macro_f1_mean": 0.5578,
+  "fold_macro_f1_std": 0.0281,
+  "trainable_params": 2370768,
+  "total_params": 84437712,
+  "trainable_pct": 2.808,
+  "train_min_per_fold": 12.73,
+  "peak_gpu_gb": 3.22,
+  "ckpt_mb": 9.5,
+  "dev_infer_s": 2.5
+}

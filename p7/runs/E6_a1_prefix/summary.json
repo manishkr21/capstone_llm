@@ -1,0 +1,25 @@
+{
+ "run_name": "E6_a1_prefix",
+ "params": {
+  "total_params": 88973568,
+  "trainable_params": 6906624,
+  "trainable_pct": 7.763
+ },
+ "train_min": 12.6,
+ "dev_encode_sec": 16.9,
+ "dev_neural": {
+  "f1": 0.3313,
+  "p": 0.3608,
+  "r": 0.3063
+ },
+ "dev_fused": {
+  "f1": 0.4658,
+  "lam": 0.75,
+  "pen": 2.0
+ },
+ "dev_lexical": 0.4525,
+ "peak_mem_gb": 15.1,
+ "ckpt_mb": 27.6,
+ "zip_neural": "/home/manish/capstone_llm/p7/submissions/E6_a1_prefix_neural_20261104_025721.zip",
+ "zip_fused": "/home/manish/capstone_llm/p7/submissions/E6_a1_prefix_fused_20261104_025721.zip"
+}

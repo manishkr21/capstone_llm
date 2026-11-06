@@ -1,0 +1,24 @@
+{
+ "feats": [
+  "V1_e6_16ch",
+  "V2_e7_16ch",
+  "V3_a1_partial",
+  "W1_a4_full_16ch",
+  "W2_a4_top6_16ch",
+  "E1_a1_full",
+  "V6_kd_ens3",
+  "A_e6_first"
+ ],
+ "layer": "lstm",
+ "name": "D_fuseall_lstm",
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "epochs": 12,
+ "lr": 0.001,
+ "hidden": 256,
+ "dropout": 0.2,
+ "bs": 64
+}

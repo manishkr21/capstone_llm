@@ -1,0 +1,25 @@
+{
+ "run_name": "E1b_a3_lorma_seed1",
+ "params": {
+  "total_params": 85016320,
+  "trainable_params": 3735808,
+  "trainable_pct": 4.394
+ },
+ "train_min": 11.3,
+ "dev_encode_sec": 16.7,
+ "dev_neural": {
+  "f1": 0.3691,
+  "p": 0.4019,
+  "r": 0.3412
+ },
+ "dev_fused": {
+  "f1": 0.468,
+  "lam": 0.25,
+  "pen": 1.0
+ },
+ "dev_lexical": 0.4436,
+ "peak_mem_gb": 35.7,
+ "ckpt_mb": 15.0,
+ "zip_neural": "/home/manish/capstone_llm/p7/submissions/E1b_a3_lorma_seed1_neural_20261106_180415.zip",
+ "zip_fused": "/home/manish/capstone_llm/p7/submissions/E1b_a3_lorma_seed1_fused_20261106_180415.zip"
+}

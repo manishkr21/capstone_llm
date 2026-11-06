@@ -1,0 +1,32 @@
+{
+  "run": "E1_a4_lorma",
+  "total_params": 90781156,
+  "trainable_params": 3274468,
+  "trainable_pct": 3.607,
+  "val": {
+    "macro_f1": 0.36917390386963267,
+    "macro_p": 0.32866987327665875,
+    "macro_r": 0.44788224923051984,
+    "micro_f1": 0.4760268165014188,
+    "subset_acc": 0.0356145251396648
+  },
+  "global_threshold": 0.525,
+  "val_at_0.5": {
+    "macro_f1": 0.3672130057888655,
+    "macro_p": 0.31619896682312915,
+    "macro_r": 0.46483798503061763,
+    "micro_f1": 0.47274104534141326,
+    "subset_acc": 0.031025538707102954
+  },
+  "sel_best_macro_f1": 0.3808366203503705,
+  "steps": 7935,
+  "train_min": 124.0,
+  "test_infer_s": 260.8,
+  "peak_gpu_gb": 8.33,
+  "ckpt_mb": 13.1,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

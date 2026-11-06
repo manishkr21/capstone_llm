@@ -1,0 +1,9 @@
+# T10: E5 (A4 QLoRA) causal + 20 epochs + tau 0.5
+inherit: ../e5_a4_qlora.yaml
+run_name: T10_e5_qlora_causal
+model:
+  attention: causal
+train:
+  epochs: 20
+  patience: 6
+  logit_adjust_tau: 0.5

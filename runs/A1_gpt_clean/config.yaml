@@ -1,0 +1,102 @@
+run_name: A1_gpt_clean
+seed: 1337
+paths:
+  data_dir: data_clean
+  runs_dir: runs
+data:
+  local_dir: data/hf
+  json_path: null
+  text_field: null
+  sources:
+    acts: 0.1
+    supreme_court: 0.3
+    high_courts: 0.35
+    tribunals: 0.25
+  train_tokens: 1000000000
+  val_tokens: 5000000
+  tokens_per_word_estimate: 1.35
+  val_fraction: 0.01
+  doc_keep_prob: 0.5
+  min_words: 50
+  collapse_whitespace: true
+  n_dev_prompts: 200
+  prompt_words: 512
+  continuation_words: 128
+  cleaning:
+    workers: 24
+    max_records: null
+    rtf_min_hits: 3
+    max_stutter_ratio: 0.02
+    min_letter_ratio: 0.6
+    min_words:
+      default: 50
+      high_courts: 100
+    short_words: 200
+    short_max_share:
+      high_courts: 0.25
+    shingle_words: 5
+    minhash_perms: 128
+    lsh_bands: 16
+    near_dup_threshold: 0.8
+    tpw_sample_docs: 2000
+    leak_ngram: 13
+    leak_keep_mod: 8
+    leak_max_overlap: 0.5
+    leak_reference:
+    - data/corpus/train.jsonl
+    contamination_check:
+      phase1_test: data/test/test.json
+      phase2_test: data/hf/Phase_2_LNER/Test/fold3-text.json
+tokenizer:
+  type: bpe
+  vocab_size: 32000
+  min_frequency: 2
+  train_docs: 100000
+  path: data/tokenizer/legal_bpe.json
+model:
+  arch: gpt
+  d_model: 768
+  n_layers: 8
+  n_heads: 12
+  d_ff: 3072
+  dropout: 0.0
+train:
+  block_size: 1024
+  micro_batch_size: 16
+  grad_accum_steps: 4
+  max_steps: 3000
+  lr: 0.0006
+  min_lr: 6.0e-05
+  warmup_steps: 200
+  weight_decay: 0.1
+  betas:
+  - 0.9
+  - 0.95
+  grad_clip: 1.0
+  log_interval: 20
+  eval_interval: 250
+  eval_batches: 40
+  early_stop_patience: null
+  dtype: auto
+  device: auto
+  compile: true
+  resume: true
+  enforce_param_budget: true
+eval:
+  prefix_frac: 0.75
+distill: null
+monitor:
+  enabled: true
+  interval_seconds: 60
+  poll_seconds: 5
+generation:
+  temperature: 0.8
+  top_k: 50
+  top_p: 0.95
+  repetition_penalty: 1.1
+  repetition_window: 256
+  ban_eos: true
+  target_words: 128
+  max_new_tokens: 256
+  batch_size: 16
+  seed: 0

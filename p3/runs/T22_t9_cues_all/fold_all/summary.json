@@ -1,0 +1,11 @@
+{
+  "run": "T22_t9_cues_all",
+  "fold": "all",
+  "total_params": 88964560,
+  "trainable_params": 7684048,
+  "trainable_pct": 8.637,
+  "epochs": 14,
+  "train_docs": 90,
+  "train_min": 10.78,
+  "steps": 686
+}

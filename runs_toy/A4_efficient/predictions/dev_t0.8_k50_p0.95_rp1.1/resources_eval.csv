@@ -1,0 +1,2 @@
+timestamp,unix_time,session,elapsed_min,window_s,n_polls,phase,step,cpu_pct,cpu_pct_max,proc_cpu_pct,cpu_cores,load_avg_1m,ram_used_gb,ram_total_gb,ram_pct,proc_rss_gb,gpu_name,gpu_util_pct,gpu_util_pct_max,gpu_mem_bw_pct,vram_used_gb,vram_total_gb,gpu_power_w,gpu_temp_c,torch_alloc_gb,torch_reserved_gb,torch_peak_alloc_gb
+2026-09-26T12:22:03,1790405523.1,20260926-122202,0.01,0.4,1,evaluate,,4.1,4.1,101.3,32,3.364,44.849,125.788,35.7,0.537,NVIDIA H200 NVL,0.0,0,0.0,10.285,140.401,95.718,31,0.0,0.0,0.0

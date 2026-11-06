@@ -1,0 +1,4 @@
+# Context selection: E5 with chunks centred on the masked <SECTION>/<ACT> placeholders (long documents only)
+inherit: e5_a4_partial.yaml
+run_name: V1_e5_evidence
+data: {strategy: evidence}

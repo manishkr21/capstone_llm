@@ -1,0 +1,36 @@
+# Shared Phase-5 settings (legal statute identification, 100 statute ids, multi-label); every experiment inherits this.
+run_name: base
+seed: 1337
+runs_dir: runs
+data:
+  strategy: spread      # first | last | first_last | spread  (spread = all chunks for docs <= 8 chunks)
+  n_chunks: 8           # 8 x 512 = 4,096 tokens covers 90% of documents completely
+  chunk_len: 512
+model:
+  phase1_ckpt: null     # relative to ../capstone_llm
+  attention: causal     # A1/A4 keep their Phase-1 causal mask (Phase-3/4 finding)
+  encdec_output: decoder  # A2: decoder states (the Phase-1 A2 encoder output is collapsed)
+  keep_layers: null
+  chunk_pool: mean
+  doc_layer: label_attn # label_attn | gru_attn | max | mean
+  hidden: 384
+  dropout: 0.1
+  max_chunks: 64
+peft:
+  method: lorma
+train:
+  epochs: 3
+  docs_per_step: 16
+  docs_per_micro: 4
+  max_chunks: 24        # chunks per backbone forward
+  lr: 2.0e-4
+  head_lr: 1.0e-3
+  weight_decay: 0.01
+  warmup_frac: 0.05
+  grad_clip: 1.0
+  pos_weight: sqrt      # none | sqrt | inv : BCE positive weights from label frequencies (rare statutes)
+  pos_weight_max: 30.0
+  sel_docs: 2000        # fixed validation subset used for checkpoint selection
+  eval_every: 800
+  log_every: 100
+distill: null

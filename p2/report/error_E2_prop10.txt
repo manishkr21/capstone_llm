@@ -1,0 +1,29 @@
+runs/E2_a4_lorma on dev (10 docs): gold 1305, predicted 1157, micro-F1 0.5045
+
+gold entities   count  share   micro-F1 if fixed
+exact             621  47.6%   
+wrong_label        98   7.5%   0.5841
+boundary          106   8.1%   0.5906
+bound+label        53   4.1%   0.5475
+missed            427  32.7%   0.8513
+spurious pred     253          0.5622  (if removed)
+
+all boundary errors fixed (boundary + bound+label as their own label) -> 0.5906; plus all spurious removed -> 0.6582
+
+label       gold       exact wrong_label    boundary bound+label      missed  spurious
+APP          114         12%         28%          0%         27%         32%        31
+RESP          93          5%          0%          4%          4%         86%         7
+A.COUNSEL     20         60%         20%         10%          5%          5%         0
+R.COUNSEL     31         65%         16%          0%          0%         19%         2
+JUDGE         33         58%          3%         27%          3%          9%        11
+WIT           44         39%         23%          9%         18%         11%        58
+AUTH         226         13%          0%          1%          0%         85%        38
+COURT         97         79%          0%          7%          0%         13%        26
+STAT         165         64%          0%          8%          0%         28%        11
+PREC         232         41%         20%         24%          3%         13%        52
+DATE         190         98%          0%          1%          0%          1%         1
+CASENO        60         68%          0%         12%          2%         18%        16
+
+most frequent label confusions (gold -> predicted): APP->RESP 35, PREC->RESP 33, APP->PREC 20, PREC->APP 12, WIT->PREC 9, WIT->RESP 9, APP->AUTH 7, PREC->JUDGE 7
+header (first 1500 chars = header): 146 gold, 60% exact
+body   (first 1500 chars = header): 1159 gold, 46% exact

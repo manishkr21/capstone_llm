@@ -1,0 +1,11 @@
+{
+  "run": "T14_t8_win1024_all",
+  "fold": "all",
+  "total_params": 84437712,
+  "trainable_params": 2370768,
+  "trainable_pct": 2.808,
+  "epochs": 12,
+  "train_docs": 90,
+  "train_min": 9.22,
+  "steps": 588
+}

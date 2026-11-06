@@ -1,0 +1,28 @@
+{
+ "name": "ENS_t3",
+ "runs": [
+  "E2_a1_lora",
+  "F1_a4_full",
+  "E3_a3_adapter"
+ ],
+ "weights": null,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 16,
+  "val_docs": 300
+ },
+ "n_val": 100,
+ "val_metrics": {
+  "rouge1_f1": 0.5107,
+  "rougeL_f1": 0.2592,
+  "words": 449.09,
+  "distinct_trigram": 0.9992,
+  "bertscore_f1": 0.8483,
+  "bertscore_p": 0.8521,
+  "bertscore_r": 0.8448
+ }
+}

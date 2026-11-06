@@ -1,0 +1,23 @@
+{
+  "run": "V6_kd_ens3",
+  "total_params": 62845187,
+  "trainable_params": 62845187,
+  "trainable_pct": 100.0,
+  "val": {
+    "macro_f1": 0.7856185987170855,
+    "macro_p": 0.7862253009311833,
+    "macro_r": 0.7857142857142857
+  },
+  "val_f1_at_0.5": 0.7289394193656653,
+  "threshold": 0.32999999999999996,
+  "steps": 3960,
+  "train_min": 57.2,
+  "test_infer_s": 15.4,
+  "peak_gpu_gb": 3.52,
+  "ckpt_mb": 251.4,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

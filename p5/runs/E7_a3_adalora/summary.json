@@ -1,0 +1,32 @@
+{
+  "run": "E7_a3_adalora",
+  "total_params": 83670820,
+  "trainable_params": 2390308,
+  "trainable_pct": 2.857,
+  "val": {
+    "macro_f1": 0.34032237619006245,
+    "macro_p": 0.30760269385516137,
+    "macro_r": 0.41369605340218846,
+    "micro_f1": 0.45662495587917157,
+    "subset_acc": 0.031225059856344772
+  },
+  "global_threshold": 0.525,
+  "val_at_0.5": {
+    "macro_f1": 0.3393957352810024,
+    "macro_p": 0.2941576918546115,
+    "macro_r": 0.4329803327329693,
+    "micro_f1": 0.45431516043822806,
+    "subset_acc": 0.02813248204309657
+  },
+  "sel_best_macro_f1": 0.35161486023570115,
+  "steps": 7935,
+  "train_min": 133.5,
+  "test_infer_s": 35.4,
+  "peak_gpu_gb": 6.04,
+  "ckpt_mb": 9.6,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

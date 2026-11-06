@@ -1,0 +1,14 @@
+{
+  "run": "Y2_kd4_a4_alpha03_all",
+  "total_params": 63397348,
+  "trainable_params": 63397348,
+  "trainable_pct": 100.0,
+  "train_docs": 52339,
+  "steps": 26176,
+  "train_min": 189.3,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

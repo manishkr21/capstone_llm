@@ -1,0 +1,143 @@
+% Appendix: method details of the six best Codabench submissions of each phase.
+% Pipelines are drawn with \pipe{box,box,...}; a box containing a comma must be wrapped in braces.
+\newcommand{\pipe}[1]{\begin{tikzpicture}[node distance=1.9mm,
+    pb/.style={draw=black!55,rounded corners=2pt,fill=blue!5,align=center,font=\scriptsize,
+               minimum height=9mm,text width=18.6mm,inner sep=2pt},
+    ar/.style={-{Stealth[length=1.4mm]},black!55}]
+  \foreach \t [count=\i] in {#1} {
+    \ifnum\i=1 \node[pb] (n\i) {\t};
+    \else \pgfmathtruncatemacro\j{\i-1}\node[pb,right=of n\j] (n\i) {\t}; \draw[ar] (n\j)--(n\i); \fi}
+\end{tikzpicture}}
+\newcommand{\kw}[1]{\par\smallskip\noindent{\small #1}\par\smallskip}
+\newenvironment{topsix}{\par\smallskip\noindent\scriptsize
+  \tabularx{\linewidth}{@{}c>{\raggedright\arraybackslash}p{3.45cm}rr>{\raggedright\arraybackslash}X@{}}\toprule
+  \# & Submission & Codabench & Local & Method (key settings)\\\midrule}{\bottomrule\endtabularx\par\medskip}
+
+\section{Method details of the top-6 submissions}\label{app:top6}
+For every phase: the shared pipeline (diagram), its common settings, and the six best finished Codabench
+submissions with the settings that distinguish them.  ``Local'' is the held-out score of the same prediction:
+P1 dev BERTScore F1 (200 leak-free prompts); P2 strict macro-F1 (10 held-out documents); P3 out-of-fold
+macro-F1 (5 folds); P4 clean-validation macro-F1 at the tuned threshold (stacks: nested split-half); P5
+cross-fitted macro-F1; P6 BERTScore F1 (300 validation documents; beam 4: 100); P7 dev micro-F1@7.
+Notation: $r$ = low-rank dimension, $\alpha$ = scaling, $\tau$ = logit-adjustment strength, KD = knowledge
+distillation with loss $\alpha\,\mathrm{CE}+(1-\alpha)T^2\,\mathrm{KL}$.
+
+% ------------------------------------------------------------------
+\subsection{Phase 1 --- Legal language model pre-training}
+\begin{center}\pipe{{Legal corpus (Acts, HC, SC, Tribunals)},{Sampling and cleaning},{Byte-level BPE, 32k vocab},{Phase-1 LM, 1,024-token windows},{Next-token loss, AdamW},{Sampling decoder $\rightarrow$ 128 words}}\end{center}
+\kw{\textbf{Common:} next-token cross-entropy; AdamW ($6\times10^{-4}$, cosine, 200 warm-up steps); 65,536 tokens per
+step; best checkpoint by validation loss.  \textbf{Decoding:} temperature 0.8, top-$k$ 50, top-$p$ 0.95, repetition
+penalty 1.1 over the last 256 tokens, end-of-text banned before 128 words.  All six uploads are R0 models (starter
+sample, 200M tokens); the cleaned 1B-token models (R2) were trained after the Phase-1 deadline.}
+\begin{topsix}
+1 & submission\_2026-09-26\_22-29-00 & 0.8286 & 0.8286 & \textbf{A1 GPT}: decoder-only, learned positions, pre-LayerNorm, GELU; 8 layers, $d=768$, 12 heads; 82.1M.\\
+2 & submission\_2026-09-27\_01-22-10 & 0.8285 & 0.8255 & \textbf{A3 prefix-LM}: bidirectional prefix, causal continuation, ALiBi positions; 8 layers, $d=768$; 81.3M.\\
+3 & submission\_2026-09-27\_01-29-15 & 0.8280 & 0.8269 & \textbf{A4 efficient}: RoPE, RMSNorm, SwiGLU, grouped-query attention (12 q / 4 kv), 256-token sliding window, global layer every 3rd; 10 layers; 87.5M.\\
+4 & submission\_2026-09-26\_22-38-32 & 0.8184 & 0.8170 & \textbf{A2 encoder--decoder}: 6+6 layers, sinusoidal positions, $d=640$; trained on random prefix/continuation splits; 89.4M.\\
+5 & submission.zip (26 Sep) & 0.8006 & -- & Early upload before the four-architecture runs; the file does not identify the model.\\
+6 & submission.zip (25 Sep) & 0.8002 & -- & Early upload, as above.\\
+\end{topsix}
+
+% ------------------------------------------------------------------
+\subsection{Phase 2 --- Legal named-entity recognition}
+\begin{center}\pipe{{Judgment text},{Punctuation pre-split, BPE + offset map},{Spans $\rightarrow$ BIO tags (12 types)},{Phase-1 encoder, 512-token windows},{Linear tag head},{BIO Viterbi $\rightarrow$ character spans}}\end{center}
+\kw{\textbf{Common:} windows of 512 tokens, stride 256 (training) / 128 (inference, each token keeps its
+best-context window); 16 windows per step; up to 15 epochs, patience 5; head learning rate $10^{-3}$; selection by
+strict span macro-F1 on 10 held-out documents.  Original (R0) Phase-1 backbones.}
+\begin{topsix}
+1 & E2\_a4\_lorma & 0.4970 & 0.4857 & \textbf{A4 + LoRMA}: $W=(I+\frac{\alpha}{r}BA)W_0$, $r=16$, $\alpha=32$, on q, k, v, o, gate, up, proj; bidirectional attention; LR $10^{-3}$; 2.2M trained.\\
+2 & E1\_a3\_full & 0.4815 & 0.4267 & \textbf{A3 full fine-tuning}: every weight; LR $10^{-4}$; 81.3M trained.\\
+3 & E5\_a4\_partial & 0.4753 & 0.4697 & \textbf{A4 partial}: top 4 of 10 blocks + final norm trainable; bidirectional; LR $2\times10^{-4}$.\\
+4 & E3\_a1\_lora & 0.4239 & 0.3564 & \textbf{A1 + LoRA}: $r=16$, $\alpha=32$ on q, k, v, o, fc, proj; bidirectional; LR $10^{-3}$; 1.8M trained.\\
+5 & E4\_a2\_adapter & 0.4015 & 0.3892 & \textbf{A2 + Houlsby adapters}: bottleneck 64 after attention and MLP; decoder states; LR $10^{-3}$.\\
+6 & E6\_kd\_a3\_small & 0.3799 & 0.3443 & \textbf{KD}: A3 student with blocks 1, 3, 5, 7 (52.9M), full fine-tuning; teacher E1; $\alpha=0.5$, $T=2$.\\
+\end{topsix}
+
+% ------------------------------------------------------------------
+\subsection{Phase 3 --- Rhetorical role prediction}
+\begin{center}\pipe{{Judgment sentences},{Pack neighbours into windows},{Phase-1 encoder + PEFT},{Mean-pool per sentence},{BiLSTM + position, domain emb.},{Sentence CRF $\rightarrow$ 13 roles}}\end{center}
+\kw{\textbf{Common:} cleaned 1B-token backbones; BiLSTM hidden 256; linear-chain CRF over sentences; logit-adjusted
+loss for rare roles; 5-fold document-level cross-validation over the 90 labelled documents (CL + IT, domain
+embedding); test emissions averaged over the 5 fold models.  ``Tuned'' (T7--T22) = causal attention, 20 epochs
+(patience 6), $\tau=0.5$.  Ensembles average the CRF emissions of several runs; ``nocal'' = no per-class bias
+calibration.}
+\begin{topsix}
+1 & T14\_t8\_win1024 & 0.5750 & 0.5007 & \textbf{A1 + LoRA} ($r=16$, $\alpha=32$), tuned, \textbf{1,024-token windows} (matches the pre-training block length); 2.4M trained.\\
+2 & T15\_t8\_r32 & 0.5736 & 0.4926 & As T8 with LoRA rank 32 ($\alpha=64$); 4.1M trained.\\
+3 & C6\_ens\_8\_nocal & 0.5711 & 0.5200 & \textbf{Ensemble of 8}: T14, T17 (BiLSTM 512), T18/T19 (seeds), T7 (A4 LoRMA), T13 (KD 6-block A4), T10 (A4 QLoRA), T9 (A3 rsLoRA).\\
+4 & T8\_e2\_causal\_ep20\_tau05 & 0.5709 & 0.4915 & \textbf{A1 + LoRA}, tuned, 512-token windows.\\
+5 & C7\_ens\_fold\_plus\_all & 0.5707 & 0.5211 & \textbf{C7 ensemble} (as C6 with lexical cue flags in T20/T22): fold models plus their all-data retrains averaged.\\
+6 & C5\_ens\_a1x4\_nocal & 0.5696 & 0.5179 & \textbf{Ensemble of 4 A1 LoRA taggers}: T14, T17, T18, T19.\\
+\end{topsix}
+
+% ------------------------------------------------------------------
+\subsection{Phase 4 --- Court judgment prediction}
+\begin{center}\pipe{{Judgment (outcome removed)},{BPE, last 8 or 16 chunks of 512},{Phase-1 encoder + adaptation},{Mean-pool chunks + position},{BiGRU + attention pooling},{2-class head, tuned threshold}}\\[2mm]
+\pipe{{Probabilities / chunk vectors of 26 runs},{Document models on cached chunks (D\_*)},{Logistic-regression stacker},{Threshold on clean validation},{0 / 1 prediction}}\end{center}
+\kw{\textbf{Common:} class-weighted cross-entropy (train 59\% label 0); 16 documents per step; 2 epochs; selection
+and threshold on the 1,988 development documents not in the test set.  \textbf{Stackers} (rows 1--2): logistic
+regression ($\ell_2=0.01$) over every run's logit, fitted on clean validation.  \textbf{D\_* document models}: the
+last $\le$48 chunks of each judgment embedded once by fine-tuned encoders (V1, V2, V3), concatenated, read by
+mean / attention / GRU / LSTM / 2-layer transformer layers.}
+\begin{topsix}
+1 & STACK\_with\_fusion & 0.8121 & 0.8225 & \textbf{Stacker over 26 runs}: E1--E8, 3 chunk-selection ablations, V1--V6, 9 D\_* document models (fusing 1, 3 or 5 encoders); threshold 0.52.\\
+2 & STACK\_all & 0.8048 & 0.8160 & \textbf{Stacker over 17 end-to-end runs} (no document models); threshold 0.50.\\
+3 & ENS\_greedy5 & 0.8009 & 0.8238 & \textbf{Mean of 5}, greedy selection: V1 (A4 partial, 16 chunks), A4 on first chunks, E7 (A3 gradual unfreezing), E4 (A2 BitFit), V6 (6-block A4 KD from a 3-model ensemble).\\
+4 & ENS\_8\_views\_kd & 0.7963 & 0.8068 & \textbf{Mean of 8}: E6, E7, E1, E3, E2, first+last and spread chunk views, E8 KD student; threshold 0.42.\\
+5 & ENS\_greedy4 & 0.7955 & 0.8219 & As ENS\_greedy5 without V6; threshold 0.36.\\
+6 & ENS\_top5 & 0.7930 & 0.7974 & \textbf{Mean of 5 best first-round runs}: E6 (A4 partial), E7 (A3 gradual), E1 (A1 full), E3 (A3 adapters), E2 (A4 LoRMA+); threshold 0.39.\\
+\end{topsix}
+
+% ------------------------------------------------------------------
+\subsection{Phase 5 --- Legal statute identification}
+\begin{center}\pipe{{Case text (statutes masked)},{8 spread chunks of 512},{Phase-1 encoder + adaptation},{BiGRU over chunk vectors},{Attention per statute (100 queries)},{100 sigmoids, per-statute thresholds}}\\[2mm]
+\pipe{{Logits of 28 Phase-1 runs},{+ TF-IDF models (lexical)},{MLP stacker (5-fold on val)},{Per-statute LightGBM stacker},{Average, thresholds}}\end{center}
+\kw{\textbf{Common:} BCE with positive weights $\sqrt{n_\text{neg}/n_\text{pos}}$ (cap 30); 16 documents per step;
+per-statute thresholds fitted on validation (scored cross-fitted); KD students = A4 with 6 of 10 blocks distilled
+from averaged logits of 3--8 earlier runs.  \textbf{Stackers:} trained 5-fold on the validation split (out-of-fold
+scores), fold models averaged for test.  \textbf{MLP}: all runs' logits for all 100 statutes, hidden 512, dropout
+0.3.  \textbf{LightGBM}: per statute, each run's logit for it, the mean logit of all statutes, and model spread.
+Rows 1--5 are \emph{hybrid} (TF-IDF logistic regression / SVM use no pretrained weights).}
+\begin{topsix}
+1 & STACK11\_full & 0.4624 & 0.4603 & MLP (2 seeds) + LightGBM (3 seeds) over 28 Phase-1 runs and 6 lexical models, incl.\ a TF-IDF model trained on train + validation folds.\\
+2 & STACK10\_seedavg & 0.4587 & 0.4602 & As STACK9, averaged over independently seeded stackers.\\
+3 & STACK9\_gbm\_mlp & 0.4579 & 0.4595 & LightGBM stacker (32 inputs) averaged with the STACK8 MLP stacker.\\
+4 & STACK8\_hybrid & 0.4493 & 0.4473 & MLP stacker, 27 Phase-1 runs + 4 lexical (word 1--2 / 1--3-gram, character TF-IDF, linear SVM).\\
+5 & STACK7\_hybrid & 0.4457 & 0.4436 & MLP stacker, 27 Phase-1 runs + word TF-IDF logistic regression.\\
+6 & STACK6\_all & 0.4231 & 0.4233 & MLP stacker over 27 Phase-1 runs only: all four architectures, 8 PEFT methods, 6 KD students.\\
+\end{topsix}
+
+% ------------------------------------------------------------------
+\subsection{Phase 6 --- Abstractive summarization}
+\begin{center}\pipe{{Judgment, sentence-split},{Salient condensation to source budget},{[prompt] source ``Summary:''},{Phase-1 LM, full fine-tuning},{Decode: greedy or beam},{Repetition control $\rightarrow$ summary}}\end{center}
+\kw{\textbf{Common:} loss on summary tokens only (up to 768); salient condensation = case opening (15\% of the
+budget) + sentences nearest the document's TF-IDF centroid, in order; AdamW, 16 sequences per step; best state by
+validation loss.  \textbf{Decoding:} 300--800 new tokens, repetition penalty 1.15, no repeated 3-grams.  Long
+sources: A4 (RoPE) extrapolates; A1's learned positions are linearly interpolated; longer-source runs start
+from the shorter-source checkpoint.}
+\begin{topsix}
+1 & S3\_a4\_full\_src4096\_beam4 & 0.8558 & 0.8522 & \textbf{A4 full}, 4,096-token source, 5 epochs from Phase-1; \textbf{beam search, 4 beams}.\\
+2 & S4\_a4\_full\_src8192 & 0.8539 & 0.8515 & \textbf{A4 full}, 8,192-token source, 3 epochs continued from S3 (LR $5\times10^{-5}$); greedy.\\
+3 & S1\_a4\_full\_src2560 & 0.8538 & 0.8519 & \textbf{A4 full}, 2,560-token source, 6 epochs; greedy.\\
+4 & S8\_a1\_full\_src8192 & 0.8520 & 0.8530 & \textbf{A1 full}, 8,192-token source (interpolated positions), 2 epochs continued from S7 (4,096); greedy.\\
+5 & S3\_a4\_full\_src4096\_long & 0.8520 & 0.8515 & S3 re-decoded with 450--900 new tokens (longer summaries).\\
+6 & S3\_a4\_full\_src4096 & 0.8520 & 0.8518 & S3, greedy decoding.\\
+\end{topsix}
+
+% ------------------------------------------------------------------
+\subsection{Phase 7 --- Prior case retrieval}
+\begin{center}\pipe{{Query: windows $\pm$60 words per \texttt{<CITATION>}},{BM25 per window vs.\ pool (1--3-grams)},{Date penalty, row + column normalisation},{Top-100 candidates},{LightGBM lambdarank},{+ $w\cdot$ mean bi-encoder score $\rightarrow$ top 7}}\\[2mm]
+\pipe{{Citation window / case chunk (512)},{Phase-1 encoder + PEFT},{Mean-pool, project to 256},{Cosine, max over chunks},{Soft-max over windows},{InfoNCE with BM25 hard negatives}}\end{center}
+\kw{\textbf{Common:} the query's own case is never returned; 7 distinct pool ids per query.  \textbf{Re-ranker}
+(STK*): features = row and column z-scores and ranks of 7 lexical scores, date difference, case length, number of
+windows; trained on train (3 seeds), refit on train + dev for test.  \textbf{Bi-encoder} (second diagram): 8
+queries per step, 2 gold + 3 hard negatives each, temperature 0.05, best of 10 epochs on dev.  \textbf{Fused} =
+z(neural) + $\lambda$ z(BM25) $-$ date penalty, weights picked on dev.}
+\begin{topsix}
+1 & STK4\_rc\_blend4 & 0.4950 & 0.4914 & Re-ranker with row + column features and first stage, \textbf{+ 0.5 $\times$ mean row + column score of 4 bi-encoders} (E1 A3 LoRMA, E2 A1 full, E3 A4 partial, E5 A3 IA$^3$).\\
+2 & STK2\_lex\_blend4 & 0.4773 & 0.4869 & Re-ranker (row features only) + 0.3 $\times$ mean row score of the same 4 bi-encoders.\\
+3 & STK1\_e2 & 0.4743 & 0.4725 & Re-ranker with the out-of-fold E2 score (2-fold runs) as an extra feature.\\
+4 & STK0\_lex & 0.4725 & 0.4769 & Lexical re-ranker only, no neural input.\\
+5 & K1\_kd\_a1\_4l\_fused & 0.4649 & 0.4625 & \textbf{KD}: A1 student with blocks 0, 2, 5, 7 (53.9M), batch-score KL to teacher E2 ($\alpha=0.5$); fused with BM25.\\
+6 & E2\_a1\_full\_fused & 0.4643 & 0.4703 & \textbf{A1 full fine-tuning} bi-encoder (bidirectional, LR $3\times10^{-5}$), fused with BM25.\\
+\end{topsix}

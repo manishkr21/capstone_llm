@@ -1,0 +1,47 @@
+{
+  "run": "T23_t10_cues",
+  "oof": {
+    "all": {
+      "macro_f1": 0.487,
+      "macro_p": 0.4811,
+      "macro_r": 0.4985,
+      "accuracy": 0.6136
+    },
+    "CL": {
+      "macro_f1": 0.4916,
+      "macro_p": 0.4738,
+      "macro_r": 0.5241,
+      "accuracy": 0.6234
+    },
+    "IT": {
+      "macro_f1": 0.5173,
+      "macro_p": 0.5229,
+      "macro_r": 0.5178,
+      "accuracy": 0.5967
+    }
+  },
+  "oof_per_label": {
+    "ArgumentPetitioner": 0.5622,
+    "ArgumentRespondent": 0.5752,
+    "Dissent": 0.0,
+    "Fact": 0.7244,
+    "Issue": 0.6214,
+    "None": 0.5102,
+    "PrecedentNotReliedUpon": 0.2608,
+    "PrecedentOverruled": 0.0,
+    "PrecedentReliedUpon": 0.5355,
+    "RatioOfTheDecision": 0.6467,
+    "RulingByLowerCourt": 0.4133,
+    "RulingByPresentCourt": 0.7228,
+    "Statute": 0.7586
+  },
+  "fold_macro_f1_mean": 0.5304,
+  "fold_macro_f1_std": 0.0206,
+  "trainable_params": 2777040,
+  "total_params": 90283728,
+  "trainable_pct": 3.076,
+  "train_min_per_fold": 17.16,
+  "peak_gpu_gb": 4.32,
+  "ckpt_mb": 11.1,
+  "dev_infer_s": 2.58
+}

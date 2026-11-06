@@ -1,0 +1,4 @@
+# W5 (A1 QLoRA) trained for 8 epochs: 3 -> 5 epochs gave +0.017
+inherit: w5_a1_qlora_ep5.yaml
+run_name: X1_a1_qlora_ep8
+train: {epochs: 8, eval_every: 2000}

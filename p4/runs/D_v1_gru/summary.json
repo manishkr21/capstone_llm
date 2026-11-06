@@ -1,0 +1,24 @@
+{
+ "run": "D_v1_gru",
+ "feats": [
+  "V1_e6_16ch"
+ ],
+ "layer": "gru",
+ "val": {
+  "macro_f1": 0.7808096399940249,
+  "macro_p": 0.7862903225806452,
+  "macro_r": 0.7816901408450705
+ },
+ "val_f1_at_0.5": 0.7583931250158907,
+ "threshold": 0.6,
+ "seed_f1_mean": 0.7740853327295159,
+ "seed_f1_std": 0.006780018447946469,
+ "total_params": 512003,
+ "trainable_params": 512003,
+ "trainable_pct": 100.0,
+ "train_min": 7.4,
+ "data": {
+  "strategy": "cached-all",
+  "n_chunks": 48
+ }
+}

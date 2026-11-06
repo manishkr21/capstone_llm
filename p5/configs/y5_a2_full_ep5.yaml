@@ -1,0 +1,6 @@
+# A2 full fine-tuning (decoder states), 5 epochs (A2 so far only partial)
+inherit: base.yaml
+run_name: Y5_a2_full_ep5
+model: {phase1_ckpt: runs/A2_encdec_clean_1B/best.pt, encdec_output: decoder}
+peft: {method: full}
+train: {lr: 5.0e-5, epochs: 5, eval_every: 1300}

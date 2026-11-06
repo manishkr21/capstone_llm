@@ -1,0 +1,9 @@
+# T14: T8 with 1024-token windows (A1 was pretrained on 1024-token blocks)
+inherit: ../tune2/t8_e2_causal_ep20_tau05.yaml
+run_name: T14_t8_win1024
+train:
+  window: 1024
+  max_windows: 8
+infer:
+  window: 1024
+  max_windows: 16

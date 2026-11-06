@@ -1,0 +1,30 @@
+{
+ "run": "E1_a4_lorma",
+ "total_params": 91930368,
+ "trainable_params": 4423680,
+ "trainable_pct": 4.812,
+ "val_loss": null,
+ "val_metrics": {
+  "rouge1_f1": 0.4987,
+  "rougeL_f1": 0.2447,
+  "words": 423.8833,
+  "distinct_trigram": 0.9996,
+  "bertscore_f1": 0.848,
+  "bertscore_p": 0.8506,
+  "bertscore_r": 0.8457
+ },
+ "train_min": null,
+ "peak_gb": null,
+ "decode_s_per_doc": 1.281,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 32,
+  "val_docs": 300,
+  "tag": "rp"
+ },
+ "zip": "E1_a4_lorma_rp_20261029_125153.zip"
+}

@@ -1,0 +1,108 @@
+{
+  "run": "f_E2clean_s1",
+  "arch": "efficient",
+  "method": "lorma",
+  "distilled_from": null,
+  "total_params": 89737753,
+  "trainable_params": 2231065,
+  "trainable_pct": 2.486,
+  "best_epoch": 11,
+  "train_minutes": 4.32,
+  "train_tokens_per_s": 40302,
+  "peak_gpu_gb": 4.45,
+  "checkpoint_mb": 9.0,
+  "dev_infer_s": 1.92,
+  "dev": {
+    "macro_f1": 0.4614,
+    "macro_p": 0.4666,
+    "macro_r": 0.4662,
+    "micro_f1": 0.5826,
+    "span_only_f1": 0.6453,
+    "per_label": {
+      "APP": {
+        "p": 0.1127,
+        "r": 0.1538,
+        "f1": 0.1301,
+        "gold": 52,
+        "pred": 71
+      },
+      "RESP": {
+        "p": 0.3415,
+        "r": 0.1818,
+        "f1": 0.2373,
+        "gold": 77,
+        "pred": 41
+      },
+      "A.COUNSEL": {
+        "p": 0.2444,
+        "r": 0.3438,
+        "f1": 0.2857,
+        "gold": 32,
+        "pred": 45
+      },
+      "R.COUNSEL": {
+        "p": 0.4107,
+        "r": 0.3833,
+        "f1": 0.3966,
+        "gold": 60,
+        "pred": 56
+      },
+      "JUDGE": {
+        "p": 0.5682,
+        "r": 0.5319,
+        "f1": 0.5495,
+        "gold": 47,
+        "pred": 44
+      },
+      "WIT": {
+        "p": 0.1,
+        "r": 0.1111,
+        "f1": 0.1053,
+        "gold": 9,
+        "pred": 10
+      },
+      "AUTH": {
+        "p": 0.3687,
+        "r": 0.2933,
+        "f1": 0.3267,
+        "gold": 225,
+        "pred": 179
+      },
+      "COURT": {
+        "p": 0.8319,
+        "r": 0.8744,
+        "f1": 0.8526,
+        "gold": 215,
+        "pred": 226
+      },
+      "STAT": {
+        "p": 0.7356,
+        "r": 0.73,
+        "f1": 0.7328,
+        "gold": 263,
+        "pred": 261
+      },
+      "PREC": {
+        "p": 0.3352,
+        "r": 0.4919,
+        "f1": 0.3987,
+        "gold": 246,
+        "pred": 361
+      },
+      "DATE": {
+        "p": 0.9256,
+        "r": 0.9614,
+        "f1": 0.9432,
+        "gold": 233,
+        "pred": 242
+      },
+      "CASENO": {
+        "p": 0.625,
+        "r": 0.5372,
+        "f1": 0.5778,
+        "gold": 121,
+        "pred": 104
+      }
+    }
+  }
+}

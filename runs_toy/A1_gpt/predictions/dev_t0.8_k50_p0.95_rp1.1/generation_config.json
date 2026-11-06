@@ -1,0 +1,16 @@
+{
+  "generation": {
+    "temperature": 0.8,
+    "top_k": 50,
+    "top_p": 0.95,
+    "repetition_penalty": 1.1,
+    "repetition_window": 256,
+    "ban_eos": true,
+    "target_words": 128,
+    "max_new_tokens": 64,
+    "batch_size": 4,
+    "seed": 0
+  },
+  "checkpoint": "runs_toy/A1_gpt/best.pt",
+  "split": "dev"
+}

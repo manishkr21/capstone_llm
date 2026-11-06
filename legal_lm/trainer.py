@@ -145,6 +145,9 @@ def train(cfg: dict) -> dict:
         scaler.load_state_dict(ck["scaler"])
         step, best_val = ck["step"], ck["best_val"]
         print(f"  resumed from {last_path} at step {step}")
+    elif t.get("init_from"):  # continued pretraining: weights only, fresh optimizer and schedule
+        model.load_state_dict(torch.load(t["init_from"], map_location="cpu", weights_only=False)["model"])
+        print(f"  initialised from {t['init_from']}")
 
     with open(out_dir / "config.yaml", "w") as f:
         yaml.safe_dump(cfg, f, sort_keys=False)

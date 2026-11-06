@@ -1,0 +1,26 @@
+{
+ "run": "D_fuse3_attn",
+ "feats": [
+  "V1_e6_16ch",
+  "V2_e7_16ch",
+  "V3_a1_partial"
+ ],
+ "layer": "attn",
+ "val": {
+  "macro_f1": 0.7976374116662801,
+  "macro_p": 0.7986681825564399,
+  "macro_r": 0.7977867203219315
+ },
+ "val_f1_at_0.5": 0.7587266501748171,
+ "threshold": 0.26999999999999996,
+ "seed_f1_mean": 0.797430251033841,
+ "seed_f1_std": 0.003123796989249305,
+ "total_params": 611843,
+ "trainable_params": 611843,
+ "trainable_pct": 100.0,
+ "train_min": 35.0,
+ "data": {
+  "strategy": "cached-all",
+  "n_chunks": 48
+ }
+}

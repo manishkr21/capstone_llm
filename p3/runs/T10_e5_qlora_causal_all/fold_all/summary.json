@@ -1,0 +1,11 @@
+{
+  "run": "T10_e5_qlora_causal_all",
+  "fold": "all",
+  "total_params": 90278864,
+  "trainable_params": 2772176,
+  "trainable_pct": 3.071,
+  "epochs": 13,
+  "train_docs": 90,
+  "train_min": 12.95,
+  "steps": 637
+}

@@ -1,0 +1,24 @@
+{
+ "run": "D_v1_lstm",
+ "feats": [
+  "V1_e6_16ch"
+ ],
+ "layer": "lstm",
+ "val": {
+  "macro_f1": 0.7808648654140189,
+  "macro_p": 0.7859984873894315,
+  "macro_r": 0.7816901408450705
+ },
+ "val_f1_at_0.5": 0.7670848942055757,
+ "threshold": 0.59,
+ "seed_f1_mean": 0.7776987050066986,
+ "seed_f1_std": 0.005298274929743282,
+ "total_params": 610819,
+ "trainable_params": 610819,
+ "trainable_pct": 100.0,
+ "train_min": 7.5,
+ "data": {
+  "strategy": "cached-all",
+  "n_chunks": 48
+ }
+}

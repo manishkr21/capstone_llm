@@ -1,0 +1,9 @@
+# T11: E8 (A4 prefix tuning) causal + 20 epochs + tau 0.5
+inherit: ../e8_a4_prefix.yaml
+run_name: T11_e8_prefix_causal
+model:
+  attention: causal
+train:
+  epochs: 20
+  patience: 6
+  logit_adjust_tau: 0.5

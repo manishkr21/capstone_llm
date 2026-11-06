@@ -1,0 +1,14 @@
+{
+  "run": "V2_e5_ep5_all",
+  "total_params": 88569316,
+  "trainable_params": 26235364,
+  "trainable_pct": 29.621,
+  "train_docs": 52339,
+  "steps": 16360,
+  "train_min": 125.2,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

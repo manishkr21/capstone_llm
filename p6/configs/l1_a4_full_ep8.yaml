@@ -1,0 +1,7 @@
+run_name: L1_a4_full_ep8
+model:
+  phase1_ckpt: runs/A4_efficient_clean_1B/best.pt
+peft:
+  method: full
+train:
+  epochs: 8

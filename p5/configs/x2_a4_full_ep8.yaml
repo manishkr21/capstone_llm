@@ -1,0 +1,4 @@
+# W2 (A4 full fine-tuning) trained for 8 epochs
+inherit: w2_a4_full_ep5.yaml
+run_name: X2_a4_full_ep8
+train: {epochs: 8, eval_every: 2000}

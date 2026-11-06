@@ -1,0 +1,18 @@
+{
+ "run": "T6_tfidf_cv",
+ "kind": "tfidf_lr on train + val folds (auxiliary stacking input)",
+ "args": {
+  "name": "T6_tfidf_cv",
+  "folds": 5,
+  "C": 4.0,
+  "jobs": 16
+ },
+ "val_crossfit": {
+  "macro_f1": 0.4305,
+  "macro_p": 0.4503,
+  "macro_r": 0.4289,
+  "micro_f1": 0.5243,
+  "subset_acc": 0.0828
+ },
+ "train_min": 43.1
+}

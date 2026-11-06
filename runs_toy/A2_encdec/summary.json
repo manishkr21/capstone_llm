@@ -1,0 +1,30 @@
+{
+  "run_name": "A2_encdec",
+  "arch": "encdec",
+  "description": "Encoder-decoder: bidirectional prompt encoder + cross-attending decoder, sinusoidal positions",
+  "params_total": 761344,
+  "params_non_embedding": 663040,
+  "best_val_loss": 4.587291836738586,
+  "best_val_ppl": 98.22805202527428,
+  "steps": 40,
+  "tokens_seen": 81920,
+  "train_seconds_this_session": 33.54261779785156,
+  "block_size": 256,
+  "eval_prefix_len": 192,
+  "peak_gpu_mem_gb": 0.099388928,
+  "distilled_from": null,
+  "compute": {
+    "monitored_hours": 0.009,
+    "sessions": 1,
+    "gpu_name": "NVIDIA H200 NVL",
+    "gpu_hours": 0.009,
+    "mean_cpu_pct": 4.94,
+    "mean_gpu_util_pct": 0.96,
+    "peak_ram_gb": 46.207,
+    "peak_proc_rss_gb": 1.899,
+    "peak_vram_gb": 11.183,
+    "peak_torch_alloc_gb": 0.093,
+    "mean_gpu_power_w": 92.93,
+    "energy_kwh": 0.001
+  }
+}

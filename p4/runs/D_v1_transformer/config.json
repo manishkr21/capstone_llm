@@ -1,0 +1,17 @@
+{
+ "feats": [
+  "V1_e6_16ch"
+ ],
+ "layer": "transformer",
+ "name": "D_v1_transformer",
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "epochs": 12,
+ "lr": 0.001,
+ "hidden": 256,
+ "dropout": 0.2,
+ "bs": 64
+}

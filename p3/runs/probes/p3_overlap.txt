@@ -1,0 +1,8 @@
+first corpus  CL-train  n=45 mean overlap 0.077  >50%: 2  >90%: 0
+first corpus  IT-train  n=45 mean overlap 0.075  >50%: 1  >90%: 0
+first corpus  CL-test   n= 5 mean overlap 0.057  >50%: 0  >90%: 0
+first corpus  IT-test   n= 5 mean overlap 0.081  >50%: 0  >90%: 0
+clean corpus  CL-train  n=45 mean overlap 0.272  >50%: 10  >90%: 1
+clean corpus  IT-train  n=45 mean overlap 0.320  >50%: 13  >90%: 3
+clean corpus  CL-test   n= 5 mean overlap 0.230  >50%: 1  >90%: 0
+clean corpus  IT-test   n= 5 mean overlap 0.386  >50%: 2  >90%: 0

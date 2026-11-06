@@ -1,0 +1,40 @@
+# Shared settings for every Phase-2 (L-NER) experiment; each eN_*.yaml inherits this file.
+run_name: base
+seed: 1337
+runs_dir: runs
+
+data:
+  dir: ../capstone_llm/data/hf/Phase_2_LNER   # relative to p2/
+  n_dev: 10            # documents held out of the 70 training docs for model selection
+  split_seed: 0        # same dev split for every run -> comparable scores
+  presplit: true       # split punctuation runs before BPE (oracle F1 0.9866 -> 0.9945)
+
+model:
+  phase1_ckpt: null    # relative to ../capstone_llm
+  attention: causal    # A1/A4 only: causal | bidirectional (A2/A3 are always bidirectional)
+  head: linear         # linear | mlp
+  dropout: 0.1
+  keep_layers: null    # subset of Phase-1 blocks (distillation student)
+
+peft:
+  method: full         # full | partial | bitfit | lora | lorma | adapter
+
+train:
+  window: 512          # tokens per training window
+  stride: 256
+  batch_size: 16
+  epochs: 15
+  patience: 5          # stop after this many epochs without dev improvement
+  lr: 1.0e-4
+  head_lr: 1.0e-3
+  weight_decay: 0.01
+  warmup_frac: 0.1
+  grad_clip: 1.0
+  o_weight: 1.0        # loss weight of the O tag (<1 down-weights the majority class)
+
+infer:
+  window: 512
+  stride: 128          # overlapping windows; each token keeps its best-context window
+  decode: viterbi      # viterbi (valid BIO only) | argmax
+
+distill: null

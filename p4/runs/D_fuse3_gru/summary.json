@@ -1,0 +1,26 @@
+{
+ "run": "D_fuse3_gru",
+ "feats": [
+  "V1_e6_16ch",
+  "V2_e7_16ch",
+  "V3_a1_partial"
+ ],
+ "layer": "gru",
+ "val": {
+  "macro_f1": 0.8057640418153744,
+  "macro_p": 0.806282637605008,
+  "macro_r": 0.8058350100603622
+ },
+ "val_f1_at_0.5": 0.7815241014095616,
+ "threshold": 0.37999999999999995,
+ "seed_f1_mean": 0.8007246773507796,
+ "seed_f1_std": 0.0028832800163842895,
+ "total_params": 908291,
+ "trainable_params": 908291,
+ "trainable_pct": 100.0,
+ "train_min": 36.5,
+ "data": {
+  "strategy": "cached-all",
+  "n_chunks": 48
+ }
+}

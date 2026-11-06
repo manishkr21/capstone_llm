@@ -1,0 +1,44 @@
+run_name: Y2_kd4_a4_alpha03
+seed: 2024
+runs_dir: runs
+data:
+  strategy: spread
+  n_chunks: 8
+  chunk_len: 512
+model:
+  phase1_ckpt: runs/A4_efficient_clean_1B/best.pt
+  attention: causal
+  encdec_output: decoder
+  keep_layers:
+  - 0
+  - 2
+  - 4
+  - 5
+  - 6
+  - 8
+  chunk_pool: mean
+  doc_layer: label_attn
+  hidden: 384
+  dropout: 0.1
+  max_chunks: 64
+peft:
+  method: full
+train:
+  epochs: 8
+  docs_per_step: 16
+  docs_per_micro: 4
+  max_chunks: 24
+  lr: 5.0e-05
+  head_lr: 0.001
+  weight_decay: 0.01
+  warmup_frac: 0.05
+  grad_clip: 1.0
+  pos_weight: sqrt
+  pos_weight_max: 30.0
+  sel_docs: 2000
+  eval_every: 2000
+  log_every: 100
+distill:
+  teacher_logits: runs/TEACHER4_ens/trainval_logits.npy
+  alpha: 0.3
+  temperature: 2.0

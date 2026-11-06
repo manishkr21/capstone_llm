@@ -1,0 +1,32 @@
+{
+  "run": "E8_a4_prefix",
+  "total_params": 91601892,
+  "trainable_params": 4095204,
+  "trainable_pct": 4.471,
+  "val": {
+    "macro_f1": 0.3473782491698038,
+    "macro_p": 0.30254509610048713,
+    "macro_r": 0.4352114966954581,
+    "micro_f1": 0.45586479589042594,
+    "subset_acc": 0.029928172386272944
+  },
+  "global_threshold": 0.49999999999999994,
+  "val_at_0.5": {
+    "macro_f1": 0.3473782491698038,
+    "macro_p": 0.30254509610048713,
+    "macro_r": 0.4352114966954581,
+    "micro_f1": 0.45586479589042594,
+    "subset_acc": 0.029928172386272944
+  },
+  "sel_best_macro_f1": 0.3555903777775415,
+  "steps": 7935,
+  "train_min": 98.9,
+  "test_infer_s": 112.5,
+  "peak_gpu_gb": 4.91,
+  "ckpt_mb": 16.4,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

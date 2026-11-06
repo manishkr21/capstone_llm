@@ -1,0 +1,8 @@
+{
+  "n": 200,
+  "rougeL_f1": 0.20922886016573325,
+  "bleu4": 0.0876933380496833,
+  "bertscore_f1": 0.8340694904327393,
+  "bertscore_model": "roberta-large (bert_score default for en)",
+  "format_problems": 0
+}

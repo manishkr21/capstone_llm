@@ -1,0 +1,25 @@
+{
+ "run": "T4_tfidf_cnb",
+ "kind": "tfidf_lr (auxiliary stacking input)",
+ "args": {
+  "name": "T4_tfidf_cnb",
+  "analyzer": "word",
+  "ngram": [
+   1,
+   2
+  ],
+  "max_features": 400000,
+  "C": 0.3,
+  "jobs": 10,
+  "model": "cnb"
+ },
+ "vocab": 400000,
+ "val_crossfit": {
+  "macro_f1": 0.1435,
+  "macro_p": 0.1824,
+  "macro_r": 0.1441,
+  "micro_f1": 0.3587,
+  "subset_acc": 0.0226
+ },
+ "train_min": 2.0
+}

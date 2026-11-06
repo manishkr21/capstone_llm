@@ -1,0 +1,11 @@
+{
+  "run": "T19_t8_seed3_all",
+  "fold": "all",
+  "total_params": 84437712,
+  "trainable_params": 2370768,
+  "trainable_pct": 2.808,
+  "epochs": 13,
+  "train_docs": 90,
+  "train_min": 9.82,
+  "steps": 637
+}

@@ -1,0 +1,11 @@
+{
+  "run": "T9_e3_ep20_tau05_all",
+  "fold": "all",
+  "total_params": 88959696,
+  "trainable_params": 7679184,
+  "trainable_pct": 8.632,
+  "epochs": 12,
+  "train_docs": 90,
+  "train_min": 9.46,
+  "steps": 588
+}

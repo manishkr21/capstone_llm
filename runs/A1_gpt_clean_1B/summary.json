@@ -1,0 +1,30 @@
+{
+  "run_name": "A1_gpt_clean_1B",
+  "arch": "gpt",
+  "description": "Decoder-only GPT: learned positions, LayerNorm, GELU, full causal MHA",
+  "params_total": 82066944,
+  "params_non_embedding": 56704512,
+  "best_val_loss": 1.9785927772521972,
+  "best_val_ppl": 7.232558000427662,
+  "steps": 12260,
+  "tokens_seen": 803471360,
+  "train_seconds_this_session": 1130.5836610794067,
+  "block_size": 1024,
+  "eval_prefix_len": 768,
+  "peak_gpu_mem_gb": 12.620607488,
+  "distilled_from": null,
+  "compute": {
+    "monitored_hours": 0.801,
+    "sessions": 2,
+    "gpu_name": "Failed to initialize NVML: Driver/library version mismatch\nNVML library version: 580.178, NVIDIA H200 NVL",
+    "gpu_hours": 0.801,
+    "mean_cpu_pct": 11.22,
+    "mean_gpu_util_pct": 71.47,
+    "peak_ram_gb": 59.562,
+    "peak_proc_rss_gb": 4.325,
+    "peak_vram_gb": 54.241,
+    "peak_torch_alloc_gb": 11.754,
+    "mean_gpu_power_w": 415.89,
+    "energy_kwh": 0.333
+  }
+}

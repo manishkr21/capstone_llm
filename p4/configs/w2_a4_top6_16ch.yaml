@@ -1,0 +1,7 @@
+# W2: A4 partial fine-tuning of the top 6 of 10 blocks (E6/V1 used 4), last 16 chunks
+inherit: base.yaml
+run_name: W2_a4_top6_16ch
+model: {phase1_ckpt: runs/A4_efficient_clean_1B/best.pt}
+peft: {method: partial, n_train_layers: 6}
+data: {n_chunks: 16}
+train: {lr: 1.0e-4}

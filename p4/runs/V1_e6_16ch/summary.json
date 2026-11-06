@@ -1,0 +1,23 @@
+{
+  "run": "V1_e6_16ch",
+  "total_params": 88017155,
+  "trainable_params": 25683203,
+  "trainable_pct": 29.18,
+  "val": {
+    "macro_f1": 0.787250704231067,
+    "macro_p": 0.7903227124183007,
+    "macro_r": 0.7877263581488934
+  },
+  "val_f1_at_0.5": 0.7738909108794021,
+  "threshold": 0.4499999999999999,
+  "steps": 3960,
+  "train_min": 36.0,
+  "test_infer_s": 21.1,
+  "peak_gpu_gb": 6.99,
+  "ckpt_mb": 102.7,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 16,
+    "chunk_len": 512
+  }
+}

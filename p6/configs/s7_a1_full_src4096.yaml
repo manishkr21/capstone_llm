@@ -1,0 +1,16 @@
+run_name: S7_a1_full_src4096
+model:
+  phase1_ckpt: runs/A1_gpt_clean_1B/best.pt
+  init_run: S6_a1_full_src2560
+  src_len: 4096
+peft:
+  method: full
+train:
+  epochs: 3
+  lr: 5.0e-5
+  warmup: 50
+  micro_batch: 1
+  grad_accum: 16
+  eval_batch: 2
+gen:
+  batch_size: 8

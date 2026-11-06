@@ -1,0 +1,6 @@
+# Cross-encoder reranker (cross_train.py): A3 prefix-LM (bidirectional) with LoRMA.
+inherit: c1_a1_cross.yaml
+run_name: C2_a3_cross_lorma
+model: {phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt, attention: causal}
+peft: {method: lorma, r: 32, alpha: 64}
+train: {lr: 5.0e-4}

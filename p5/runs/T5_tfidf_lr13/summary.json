@@ -1,0 +1,25 @@
+{
+ "run": "T5_tfidf_lr13",
+ "kind": "tfidf_lr (auxiliary stacking input)",
+ "args": {
+  "name": "T5_tfidf_lr13",
+  "analyzer": "word",
+  "ngram": [
+   1,
+   3
+  ],
+  "max_features": 600000,
+  "C": 8.0,
+  "jobs": 10,
+  "model": "lr"
+ },
+ "vocab": 600000,
+ "val_crossfit": {
+  "macro_f1": 0.4063,
+  "macro_p": 0.4174,
+  "macro_r": 0.4186,
+  "micro_f1": 0.5,
+  "subset_acc": 0.0743
+ },
+ "train_min": 15.9
+}

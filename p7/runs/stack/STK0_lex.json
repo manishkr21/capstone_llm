@@ -1,0 +1,15 @@
+{
+ "name": "STK0_lex",
+ "neural": [],
+ "depth": 100,
+ "trees": 600,
+ "lr": 0.03,
+ "leaves": 15,
+ "refit": true,
+ "dev": {
+  "f1": 0.4769,
+  "p": 0.5194,
+  "r": 0.4409
+ },
+ "zip": "/home/manish/capstone_llm/p7/submissions/STK0_lex_20261104_031622.zip"
+}

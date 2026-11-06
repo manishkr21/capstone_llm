@@ -1,0 +1,17 @@
+{
+ "name": "STK1_e2",
+ "neural": [
+  "E2_a1_full"
+ ],
+ "depth": 100,
+ "trees": 600,
+ "lr": 0.03,
+ "leaves": 15,
+ "refit": true,
+ "dev": {
+  "f1": 0.4725,
+  "p": 0.5145,
+  "r": 0.4368
+ },
+ "zip": "/home/manish/capstone_llm/p7/submissions/STK1_e2_20261104_032324.zip"
+}

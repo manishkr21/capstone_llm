@@ -1,0 +1,30 @@
+run_name: S7c_a1_full_src4096_head30
+seed: 2
+model:
+  phase1_ckpt: runs/A1_gpt_clean_1B/best.pt
+  src_len: 4096
+  tgt_len: 768
+  dropout: 0.1
+  init_run: S6_a1_full_src2560
+data:
+  strategy: salient
+  head_frac: 0.3
+peft:
+  method: full
+train:
+  epochs: 3
+  lr: 5.0e-05
+  micro_batch: 1
+  grad_accum: 16
+  warmup: 50
+  weight_decay: 0.01
+  label_smoothing: 0.0
+  eval_batch: 2
+gen:
+  max_new_tokens: 800
+  min_new_tokens: 300
+  no_repeat_ngram: 3
+  repetition_penalty: 1.15
+  temperature: 0
+  batch_size: 8
+  val_docs: 300

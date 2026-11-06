@@ -1,0 +1,23 @@
+{
+  "run": "E3_a3_adapter",
+  "total_params": 83377155,
+  "trainable_params": 2122755,
+  "trainable_pct": 2.546,
+  "val": {
+    "macro_f1": 0.7540881217351806,
+    "macro_p": 0.7563579277864992,
+    "macro_r": 0.7545271629778671
+  },
+  "val_f1_at_0.5": 0.7211228677663107,
+  "threshold": 0.4099999999999999,
+  "steps": 3960,
+  "train_min": 45.5,
+  "test_infer_s": 21.5,
+  "peak_gpu_gb": 3.73,
+  "ckpt_mb": 8.5,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

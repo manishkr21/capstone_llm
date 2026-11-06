@@ -1,0 +1,40 @@
+{
+  "name": "C0_t4",
+  "members": [
+    "runs/T4_e2_causal"
+  ],
+  "oof_uncalibrated": {
+    "all": 0.4768,
+    "CL": 0.4961,
+    "IT": 0.451
+  },
+  "oof_calibrated_nested": {
+    "all": 0.4925,
+    "CL": 0.5004,
+    "IT": 0.4801
+  },
+  "calibrated_P_R": [
+    0.4866,
+    0.5102
+  ],
+  "uncalibrated_P_R": [
+    0.4537,
+    0.537
+  ],
+  "final_bias": {
+    "Fact": 1.0,
+    "Issue": -1.0,
+    "ArgumentPetitioner": 0.25,
+    "ArgumentRespondent": -0.25,
+    "Statute": 1.0,
+    "Dissent": 1.0,
+    "PrecedentReliedUpon": 0.75,
+    "PrecedentNotReliedUpon": 0.75,
+    "PrecedentOverruled": 0.0,
+    "RulingByLowerCourt": 1.0,
+    "RatioOfTheDecision": 1.0,
+    "RulingByPresentCourt": -1.0,
+    "None": -0.75
+  },
+  "in_sample_fit": 0.5072
+}

@@ -1,0 +1,3 @@
+# Y3 recipe (A1 KD student) trained on train + validation, teacher logits as in y2_kd4_trainval
+inherit: y3_kd4_a1.yaml
+distill: {teacher_logits: runs/TEACHER4_ens/trainval_logits.npy, alpha: 0.5, temperature: 2.0}

@@ -1,0 +1,33 @@
+{
+ "name": "MBR6_long8",
+ "cands": [
+  "S7_a1_full_src4096",
+  "S7_a1_full_src4096:beam4",
+  "S6_a1_full_src2560",
+  "S8_a1_full_src8192",
+  "S5_a3_full_src4096",
+  "S3_a4_full_src4096",
+  "S1_a4_full_src2560",
+  "S4_a4_full_src8192"
+ ],
+ "n_val": 300,
+ "val_metrics": {
+  "rouge1_f1": 0.5374,
+  "rougeL_f1": 0.2869,
+  "words": 452.0967,
+  "distinct_trigram": 0.9997,
+  "bertscore_f1": 0.8565,
+  "bertscore_p": 0.8552,
+  "bertscore_r": 0.858
+ },
+ "picked_share": {
+  "S7_a1_full_src4096": 0.327,
+  "S7_a1_full_src4096:beam4": 0.213,
+  "S6_a1_full_src2560": 0.143,
+  "S8_a1_full_src8192": 0.147,
+  "S5_a3_full_src4096": 0.03,
+  "S3_a4_full_src4096": 0.043,
+  "S1_a4_full_src2560": 0.053,
+  "S4_a4_full_src8192": 0.043
+ }
+}

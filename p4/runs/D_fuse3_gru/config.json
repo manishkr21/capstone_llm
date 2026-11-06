@@ -1,0 +1,19 @@
+{
+ "feats": [
+  "V1_e6_16ch",
+  "V2_e7_16ch",
+  "V3_a1_partial"
+ ],
+ "layer": "gru",
+ "name": "D_fuse3_gru",
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "epochs": 12,
+ "lr": 0.001,
+ "hidden": 256,
+ "dropout": 0.2,
+ "bs": 64
+}

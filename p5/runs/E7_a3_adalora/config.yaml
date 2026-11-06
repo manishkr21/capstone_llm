@@ -1,0 +1,47 @@
+run_name: E7_a3_adalora
+seed: 1337
+runs_dir: runs
+data:
+  strategy: spread
+  n_chunks: 8
+  chunk_len: 512
+model:
+  phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt
+  attention: causal
+  encdec_output: decoder
+  keep_layers: null
+  chunk_pool: mean
+  doc_layer: label_attn
+  hidden: 384
+  dropout: 0.1
+  max_chunks: 64
+peft:
+  method: adalora
+  r: 12
+  target_r: 8
+  alpha: 32
+  lora_dropout: 0.05
+  targets:
+  - q
+  - k
+  - v
+  - o
+  - fc
+  - proj
+  orth_reg: 0.1
+train:
+  epochs: 3
+  docs_per_step: 16
+  docs_per_micro: 4
+  max_chunks: 24
+  lr: 0.0002
+  head_lr: 0.001
+  weight_decay: 0.01
+  warmup_frac: 0.05
+  grad_clip: 1.0
+  pos_weight: sqrt
+  pos_weight_max: 30.0
+  sel_docs: 2000
+  eval_every: 800
+  log_every: 100
+distill: null

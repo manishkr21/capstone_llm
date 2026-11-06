@@ -1,0 +1,5 @@
+# E2 with more / harder negatives and more of each case per step.
+inherit: e2_a1_full.yaml
+run_name: E2d_a1_full_hard
+seed: 3
+train: {epochs: 4, n_hard: 6, hard_pool: 50, train_chunks: 6, queries: 4}

@@ -1,0 +1,25 @@
+{
+ "run_name": "E4_a2_qlora",
+ "params": {
+  "total_params": 26176256,
+  "trainable_params": 5570816,
+  "trainable_pct": 21.282
+ },
+ "train_min": 21.7,
+ "dev_encode_sec": 17.3,
+ "dev_neural": {
+  "f1": 0.3635,
+  "p": 0.3959,
+  "r": 0.3361
+ },
+ "dev_fused": {
+  "f1": 0.4636,
+  "lam": 0.5,
+  "pen": 2.0
+ },
+ "dev_lexical": 0.4525,
+ "peak_mem_gb": 46.8,
+ "ckpt_mb": 22.3,
+ "zip_neural": "/home/manish/capstone_llm/p7/submissions/E4_a2_qlora_neural_20261104_032709.zip",
+ "zip_fused": "/home/manish/capstone_llm/p7/submissions/E4_a2_qlora_fused_20261104_032709.zip"
+}

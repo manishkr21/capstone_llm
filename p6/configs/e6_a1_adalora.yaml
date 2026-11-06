@@ -1,0 +1,10 @@
+run_name: E6_a1_adalora
+model:
+  phase1_ckpt: runs/A1_gpt_clean_1B/best.pt
+peft:
+  method: adalora
+  r: 32
+  target_r: 16
+  alpha: 64
+train:
+  lr: 5.0e-4

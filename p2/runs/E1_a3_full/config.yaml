@@ -1,0 +1,33 @@
+run_name: E1_a3_full
+seed: 1337
+runs_dir: runs
+data:
+  dir: ../capstone_llm/data/hf/Phase_2_LNER
+  n_dev: 10
+  split_seed: 0
+  presplit: true
+model:
+  phase1_ckpt: runs/A3_prefixlm/best.pt
+  attention: causal
+  head: linear
+  dropout: 0.1
+  keep_layers: null
+peft:
+  method: full
+train:
+  window: 512
+  stride: 256
+  batch_size: 16
+  epochs: 15
+  patience: 5
+  lr: 0.0001
+  head_lr: 0.001
+  weight_decay: 0.01
+  warmup_frac: 0.1
+  grad_clip: 1.0
+  o_weight: 1.0
+infer:
+  window: 512
+  stride: 128
+  decode: viterbi
+distill: null

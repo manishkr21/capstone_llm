@@ -1,0 +1,5 @@
+inherit: base.yaml
+run_name: E5_a3_ia3
+model: {phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt}
+peft: {method: ia3}
+train: {lr: 3.0e-3}

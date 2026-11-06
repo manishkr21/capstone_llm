@@ -1,0 +1,6 @@
+# A4 full fine-tuning (not tried in round 1), 5 epochs
+inherit: base.yaml
+run_name: W2_a4_full_ep5
+model: {phase1_ckpt: runs/A4_efficient_clean_1B/best.pt}
+peft: {method: full}
+train: {lr: 5.0e-5, epochs: 5, eval_every: 1300}

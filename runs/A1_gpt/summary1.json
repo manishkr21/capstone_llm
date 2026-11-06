@@ -1,0 +1,30 @@
+{
+  "run_name": "A1_gpt",
+  "arch": "gpt",
+  "description": "Decoder-only GPT: learned positions, LayerNorm, GELU, full causal MHA",
+  "params_total": 82066944,
+  "params_non_embedding": 56704512,
+  "best_val_loss": 2.4303394228219988,
+  "best_val_ppl": 11.362738198202042,
+  "steps": 3000,
+  "tokens_seen": 196608000,
+  "train_seconds_this_session": 1392.261667251587,
+  "block_size": 1024,
+  "eval_prefix_len": 768,
+  "peak_gpu_mem_gb": 7.329886208,
+  "distilled_from": null,
+  "compute": {
+    "monitored_hours": 0.387,
+    "sessions": 1,
+    "gpu_name": "NVIDIA H200 NVL",
+    "gpu_hours": 0.387,
+    "mean_cpu_pct": 4.69,
+    "mean_gpu_util_pct": 34.54,
+    "peak_ram_gb": 46.571,
+    "peak_proc_rss_gb": 1.788,
+    "peak_vram_gb": 18.847,
+    "peak_torch_alloc_gb": 6.826,
+    "mean_gpu_power_w": 240.55,
+    "energy_kwh": 0.093
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "run": "E2_a4_lorma",
+  "total_params": 90228995,
+  "trainable_params": 2722307,
+  "trainable_pct": 3.017,
+  "val": {
+    "macro_f1": 0.7534909379855554,
+    "macro_p": 0.7536453776611257,
+    "macro_r": 0.7535211267605634
+  },
+  "val_f1_at_0.5": 0.7325003208671279,
+  "threshold": 0.3499999999999999,
+  "steps": 3960,
+  "train_min": 68.6,
+  "test_infer_s": 13.1,
+  "peak_gpu_gb": 8.31,
+  "ckpt_mb": 10.9,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

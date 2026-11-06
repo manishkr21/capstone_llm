@@ -1,0 +1,29 @@
+{
+ "run": "S8_a1_full_src8192",
+ "total_params": 88189440,
+ "trainable_params": 88189440,
+ "trainable_pct": 100.0,
+ "val_loss": 1.452540698837896,
+ "val_metrics": {
+  "rouge1_f1": 0.5058,
+  "rougeL_f1": 0.2708,
+  "words": 418.3133,
+  "distinct_trigram": 0.9997,
+  "bertscore_f1": 0.853,
+  "bertscore_p": 0.8521,
+  "bertscore_r": 0.854
+ },
+ "train_min": 37.8,
+ "peak_gb": 5.29,
+ "decode_s_per_doc": 2.22,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 8,
+  "val_docs": 300
+ },
+ "zip": "S8_a1_full_src8192_20261030_031609.zip"
+}

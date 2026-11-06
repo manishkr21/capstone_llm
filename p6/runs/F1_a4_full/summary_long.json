@@ -1,0 +1,30 @@
+{
+ "run": "F1_a4_full",
+ "total_params": 87506688,
+ "trainable_params": 87506688,
+ "trainable_pct": 100.0,
+ "val_loss": null,
+ "val_metrics": {
+  "rouge1_f1": 0.4944,
+  "rougeL_f1": 0.2546,
+  "words": 504.5067,
+  "distinct_trigram": 0.9079,
+  "bertscore_f1": 0.8421,
+  "bertscore_p": 0.8444,
+  "bertscore_r": 0.84
+ },
+ "train_min": null,
+ "peak_gb": null,
+ "decode_s_per_doc": 1.143,
+ "gen": {
+  "max_new_tokens": 1000,
+  "min_new_tokens": 500,
+  "no_repeat_ngram": 4,
+  "repetition_penalty": 1.0,
+  "temperature": 0,
+  "batch_size": 32,
+  "val_docs": 150,
+  "tag": "long"
+ },
+ "zip": "F1_a4_full_20261029_011808.zip"
+}

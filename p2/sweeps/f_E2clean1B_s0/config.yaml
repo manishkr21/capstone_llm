@@ -1,0 +1,44 @@
+run_name: f_E2clean1B_s0
+seed: 1337
+runs_dir: sweeps
+data:
+  dir: ../capstone_llm/data/hf/Phase_2_LNER
+  n_dev: 10
+  split_seed: 0
+  presplit: true
+model:
+  phase1_ckpt: runs/A4_efficient_clean_1B/best.pt
+  attention: bidirectional
+  head: linear
+  dropout: 0.1
+  keep_layers: null
+peft:
+  method: lorma
+  r: 16
+  alpha: 32
+  lora_dropout: 0.05
+  targets:
+  - q
+  - k
+  - v
+  - o
+  - gate
+  - up
+  - proj
+train:
+  window: 512
+  stride: 256
+  batch_size: 16
+  epochs: 15
+  patience: 5
+  lr: 0.001
+  head_lr: 0.001
+  weight_decay: 0.01
+  warmup_frac: 0.1
+  grad_clip: 1.0
+  o_weight: 1.0
+infer:
+  window: 512
+  stride: 128
+  decode: viterbi
+distill: null

@@ -1,0 +1,7 @@
+# R2: continue an R1 model on the cleaned corpus until it has seen 1B tokens in total.
+# R1 = 3000 steps x 65,536 = 196.6M tokens; R2 adds 12,260 steps = 803.5M tokens.
+# Fresh warm-up and cosine decay with the same peak/min LR as Phase 1.
+#   --set run_name=A4_efficient_clean_1B train.init_from=runs/A4_efficient_clean/last.pt
+train:
+  max_steps: 12260
+  init_from: null

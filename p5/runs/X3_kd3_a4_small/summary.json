@@ -1,0 +1,32 @@
+{
+  "run": "X3_kd3_a4_small",
+  "total_params": 63397348,
+  "trainable_params": 63397348,
+  "trainable_pct": 100.0,
+  "val": {
+    "macro_f1": 0.4007154661891527,
+    "macro_p": 0.3779863383680802,
+    "macro_r": 0.44144498641858276,
+    "micro_f1": 0.4997496841252056,
+    "subset_acc": 0.05736233040702315
+  },
+  "global_threshold": 0.525,
+  "val_at_0.5": {
+    "macro_f1": 0.4002891665714675,
+    "macro_p": 0.36748321540130147,
+    "macro_r": 0.455562704600076,
+    "micro_f1": 0.4985185782963074,
+    "subset_acc": 0.0538707102952913
+  },
+  "sel_best_macro_f1": 0.4088675664743051,
+  "steps": 21160,
+  "train_min": 148.2,
+  "test_infer_s": 56.8,
+  "peak_gpu_gb": 5.78,
+  "ckpt_mb": 253.6,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

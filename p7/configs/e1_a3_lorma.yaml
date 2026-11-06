@@ -1,0 +1,5 @@
+inherit: base.yaml
+run_name: E1_a3_lorma
+model: {phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt}
+peft: {method: lorma, r: 32, alpha: 64}
+train: {lr: 5.0e-4}

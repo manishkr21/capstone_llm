@@ -1,0 +1,47 @@
+{
+  "run": "E1_a4_lorma_origP1",
+  "oof": {
+    "all": {
+      "macro_f1": 0.4266,
+      "macro_p": 0.4122,
+      "macro_r": 0.4951,
+      "accuracy": 0.5456
+    },
+    "CL": {
+      "macro_f1": 0.4338,
+      "macro_p": 0.414,
+      "macro_r": 0.5155,
+      "accuracy": 0.5552
+    },
+    "IT": {
+      "macro_f1": 0.4034,
+      "macro_p": 0.4044,
+      "macro_r": 0.4442,
+      "accuracy": 0.5293
+    }
+  },
+  "oof_per_label": {
+    "ArgumentPetitioner": 0.5209,
+    "ArgumentRespondent": 0.3974,
+    "Dissent": 0.234,
+    "Fact": 0.7089,
+    "Issue": 0.2455,
+    "None": 0.2907,
+    "PrecedentNotReliedUpon": 0.2547,
+    "PrecedentOverruled": 0.0,
+    "PrecedentReliedUpon": 0.5113,
+    "RatioOfTheDecision": 0.5761,
+    "RulingByLowerCourt": 0.4133,
+    "RulingByPresentCourt": 0.6612,
+    "Statute": 0.7324
+  },
+  "fold_macro_f1_mean": 0.4366,
+  "fold_macro_f1_std": 0.0215,
+  "trainable_params": 2813136,
+  "total_params": 90319824,
+  "trainable_pct": 3.115,
+  "train_min_per_fold": 9.49,
+  "peak_gpu_gb": 4.57,
+  "ckpt_mb": 11.3,
+  "dev_infer_s": 1.94
+}

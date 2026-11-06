@@ -1,0 +1,14 @@
+{"epoch": 1, "step": 93, "train_loss": 1.0946, "elapsed_s": 6.5, "macro_f1": 0.0077, "macro_p": 0.0156, "macro_r": 0.0052, "micro_f1": 0.009, "span_only_f1": 0.018}
+{"epoch": 2, "step": 185, "train_loss": 0.3564, "elapsed_s": 13.1, "macro_f1": 0.001, "macro_p": 0.0833, "macro_r": 0.0005, "micro_f1": 0.0014, "span_only_f1": 0.0014}
+{"epoch": 3, "step": 277, "train_loss": 0.303, "elapsed_s": 19.6, "macro_f1": 0.0549, "macro_p": 0.116, "macro_r": 0.0421, "micro_f1": 0.1006, "span_only_f1": 0.1006}
+{"epoch": 4, "step": 370, "train_loss": 0.279, "elapsed_s": 26.4, "macro_f1": 0.0401, "macro_p": 0.0757, "macro_r": 0.0294, "micro_f1": 0.0679, "span_only_f1": 0.0679}
+{"epoch": 5, "step": 462, "train_loss": 0.2622, "elapsed_s": 32.8, "macro_f1": 0.076, "macro_p": 0.1147, "macro_r": 0.0705, "micro_f1": 0.1204, "span_only_f1": 0.1358}
+{"epoch": 6, "step": 555, "train_loss": 0.2564, "elapsed_s": 39.1, "macro_f1": 0.0532, "macro_p": 0.0993, "macro_r": 0.0408, "micro_f1": 0.0869, "span_only_f1": 0.0881}
+{"epoch": 7, "step": 648, "train_loss": 0.2447, "elapsed_s": 44.9, "macro_f1": 0.086, "macro_p": 0.1123, "macro_r": 0.0738, "micro_f1": 0.1455, "span_only_f1": 0.1455}
+{"epoch": 8, "step": 741, "train_loss": 0.24, "elapsed_s": 51.4, "macro_f1": 0.0827, "macro_p": 0.1055, "macro_r": 0.0707, "micro_f1": 0.1407, "span_only_f1": 0.1407}
+{"epoch": 9, "step": 833, "train_loss": 0.2293, "elapsed_s": 58.0, "macro_f1": 0.1116, "macro_p": 0.1551, "macro_r": 0.094, "micro_f1": 0.186, "span_only_f1": 0.186}
+{"epoch": 10, "step": 925, "train_loss": 0.2236, "elapsed_s": 64.8, "macro_f1": 0.1101, "macro_p": 0.1486, "macro_r": 0.0953, "micro_f1": 0.1829, "span_only_f1": 0.185}
+{"epoch": 11, "step": 1017, "train_loss": 0.2206, "elapsed_s": 71.4, "macro_f1": 0.0921, "macro_p": 0.1407, "macro_r": 0.0765, "micro_f1": 0.1615, "span_only_f1": 0.1626}
+{"epoch": 12, "step": 1110, "train_loss": 0.2182, "elapsed_s": 77.9, "macro_f1": 0.1065, "macro_p": 0.1492, "macro_r": 0.0907, "micro_f1": 0.1783, "span_only_f1": 0.1804}
+{"epoch": 13, "step": 1202, "train_loss": 0.2148, "elapsed_s": 84.2, "macro_f1": 0.1086, "macro_p": 0.1615, "macro_r": 0.0913, "micro_f1": 0.1783, "span_only_f1": 0.1804}
+{"epoch": 14, "step": 1294, "train_loss": 0.2123, "elapsed_s": 91.1, "macro_f1": 0.1109, "macro_p": 0.1573, "macro_r": 0.0952, "micro_f1": 0.1836, "span_only_f1": 0.1857}

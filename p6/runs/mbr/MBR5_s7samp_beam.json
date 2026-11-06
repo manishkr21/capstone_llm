@@ -1,0 +1,35 @@
+{
+ "name": "MBR5_s7samp_beam",
+ "cands": [
+  "S7_a1_full_src4096",
+  "S7_a1_full_src4096:beam4",
+  "S7_a1_full_src4096:samp1",
+  "S7_a1_full_src4096:samp2",
+  "S7_a1_full_src4096:samp3",
+  "S7_a1_full_src4096:samp4",
+  "S6_a1_full_src2560",
+  "S8_a1_full_src8192",
+  "S5_a3_full_src4096"
+ ],
+ "n_val": 300,
+ "val_metrics": {
+  "rouge1_f1": 0.5281,
+  "rougeL_f1": 0.2827,
+  "words": 439.68,
+  "distinct_trigram": 0.9997,
+  "bertscore_f1": 0.8559,
+  "bertscore_p": 0.8542,
+  "bertscore_r": 0.8577
+ },
+ "picked_share": {
+  "S7_a1_full_src4096": 0.34,
+  "S7_a1_full_src4096:beam4": 0.333,
+  "S7_a1_full_src4096:samp1": 0.017,
+  "S7_a1_full_src4096:samp2": 0.01,
+  "S7_a1_full_src4096:samp3": 0.017,
+  "S7_a1_full_src4096:samp4": 0.017,
+  "S6_a1_full_src2560": 0.1,
+  "S8_a1_full_src8192": 0.16,
+  "S5_a3_full_src4096": 0.007
+ }
+}

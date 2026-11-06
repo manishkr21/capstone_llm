@@ -1,0 +1,27 @@
+{
+ "name": "MBR2_long",
+ "cands": [
+  "S1_a4_full_src2560",
+  "S3_a4_full_src4096",
+  "L2_a1_full_ep6",
+  "E2_a1_lora:rp",
+  "F1_a4_full:rp"
+ ],
+ "n_val": 300,
+ "val_metrics": {
+  "rouge1_f1": 0.5302,
+  "rougeL_f1": 0.2679,
+  "words": 448.1767,
+  "distinct_trigram": 0.9997,
+  "bertscore_f1": 0.8518,
+  "bertscore_p": 0.8522,
+  "bertscore_r": 0.8514
+ },
+ "picked_share": {
+  "S1_a4_full_src2560": 0.09,
+  "S3_a4_full_src4096": 0.087,
+  "L2_a1_full_ep6": 0.377,
+  "E2_a1_lora:rp": 0.263,
+  "F1_a4_full:rp": 0.183
+ }
+}

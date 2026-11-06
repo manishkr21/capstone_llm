@@ -1,0 +1,6 @@
+# T3: E3 trained longer (best epoch was 12, 11, 12, 9 of 12)
+inherit: ../e3_a3_rslora.yaml
+run_name: T3_e3_ep20
+train:
+  epochs: 20
+  patience: 6

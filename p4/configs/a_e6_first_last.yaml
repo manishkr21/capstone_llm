@@ -1,0 +1,4 @@
+# Section ablation: E6 reading the first_last chunks instead of the last ones
+inherit: e6_a4_partial.yaml
+run_name: A_e6_first_last
+data: {strategy: first_last}

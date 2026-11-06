@@ -1,0 +1,25 @@
+{
+ "run_name": "E1_a3_lorma",
+ "params": {
+  "total_params": 85016320,
+  "trainable_params": 3735808,
+  "trainable_pct": 4.394
+ },
+ "train_min": 18.5,
+ "dev_encode_sec": 11.4,
+ "dev_neural": {
+  "f1": 0.3791,
+  "p": 0.4128,
+  "r": 0.3505
+ },
+ "dev_fused": {
+  "f1": 0.4658,
+  "lam": 0.5,
+  "pen": 2.0
+ },
+ "dev_lexical": 0.4525,
+ "peak_mem_gb": 35.6,
+ "ckpt_mb": 15.0,
+ "zip_neural": "/home/manish/capstone_llm/p7/submissions/E1_a3_lorma_neural_20261104_030306.zip",
+ "zip_fused": "/home/manish/capstone_llm/p7/submissions/E1_a3_lorma_fused_20261104_030307.zip"
+}

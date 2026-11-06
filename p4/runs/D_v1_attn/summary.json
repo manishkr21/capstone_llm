@@ -1,0 +1,24 @@
+{
+ "run": "D_v1_attn",
+ "feats": [
+  "V1_e6_16ch"
+ ],
+ "layer": "attn",
+ "val": {
+  "macro_f1": 0.7759496240057033,
+  "macro_p": 0.786443367858336,
+  "macro_r": 0.7776659959758552
+ },
+ "val_f1_at_0.5": 0.7684532490682223,
+ "threshold": 0.59,
+ "seed_f1_mean": 0.7757546007550946,
+ "seed_f1_std": 0.00606026936220093,
+ "total_params": 215555,
+ "trainable_params": 215555,
+ "trainable_pct": 100.0,
+ "train_min": 7.2,
+ "data": {
+  "strategy": "cached-all",
+  "n_chunks": 48
+ }
+}

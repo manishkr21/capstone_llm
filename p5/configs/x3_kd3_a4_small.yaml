@@ -1,0 +1,5 @@
+# KD round 3: 6-block A4 student, teacher = round-2 winners (W1, W5, W2, W3, W6), 8 epochs
+inherit: e10_kd_a4_small.yaml
+run_name: X3_kd3_a4_small
+train: {epochs: 8, eval_every: 2000}
+distill: {teacher_logits: runs/TEACHER3_ens/train_logits.npy, alpha: 0.5, temperature: 2.0}

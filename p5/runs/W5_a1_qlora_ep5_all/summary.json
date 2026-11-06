@@ -1,0 +1,14 @@
+{
+  "run": "W5_a1_qlora_ep5_all",
+  "total_params": 28275940,
+  "trainable_params": 2832100,
+  "trainable_pct": 10.016,
+  "train_docs": 52339,
+  "steps": 16360,
+  "train_min": 164.5,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

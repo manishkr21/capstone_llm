@@ -1,0 +1,29 @@
+{
+ "run": "S7c_a1_full_src4096_head30",
+ "total_params": 85043712,
+ "trainable_params": 85043712,
+ "trainable_pct": 100.0,
+ "val_loss": 1.5187440324438182,
+ "val_metrics": {
+  "rouge1_f1": 0.518,
+  "rougeL_f1": 0.2803,
+  "words": 426.9133,
+  "distinct_trigram": 0.9997,
+  "bertscore_f1": 0.8554,
+  "bertscore_p": 0.8543,
+  "bertscore_r": 0.8566
+ },
+ "train_min": 67.0,
+ "peak_gb": 3.41,
+ "decode_s_per_doc": 1.716,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 8,
+  "val_docs": 300
+ },
+ "zip": "S7c_a1_full_src4096_head30_20261103_170900.zip"
+}

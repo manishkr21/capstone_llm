@@ -1,0 +1,14 @@
+# E3 - A1 GPT + LoRA (additive low-rank update) on attention and MLP.
+inherit: base.yaml
+run_name: E3_a1_lora
+model:
+  phase1_ckpt: runs/A1_gpt/best1.pt
+  attention: bidirectional
+peft:
+  method: lora
+  r: 16
+  alpha: 32
+  lora_dropout: 0.05
+  targets: [q, k, v, o, fc, proj]
+train:
+  lr: 1.0e-3

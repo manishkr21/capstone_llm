@@ -1,0 +1,25 @@
+{
+ "run_name": "K1_kd_a1_4l",
+ "params": {
+  "total_params": 53912320,
+  "trainable_params": 53912320,
+  "trainable_pct": 100.0
+ },
+ "train_min": 8.1,
+ "dev_encode_sec": 1.6,
+ "dev_neural": {
+  "f1": 0.3691,
+  "p": 0.4019,
+  "r": 0.3412
+ },
+ "dev_fused": {
+  "f1": 0.4625,
+  "lam": 0.5,
+  "pen": 2.0
+ },
+ "dev_lexical": 0.4525,
+ "peak_mem_gb": 13.9,
+ "ckpt_mb": 215.7,
+ "zip_neural": "/home/manish/capstone_llm/p7/submissions/K1_kd_a1_4l_neural_20261104_033342.zip",
+ "zip_fused": "/home/manish/capstone_llm/p7/submissions/K1_kd_a1_4l_fused_20261104_033342.zip"
+}

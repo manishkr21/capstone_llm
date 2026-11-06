@@ -1,0 +1,29 @@
+{
+ "run": "E3_a3_adapter",
+ "total_params": 84440576,
+ "trainable_params": 3186176,
+ "trainable_pct": 3.773,
+ "val_loss": 2.1747402176304718,
+ "val_metrics": {
+  "rouge1_f1": 0.4927,
+  "rougeL_f1": 0.2504,
+  "words": 489.53,
+  "distinct_trigram": 0.9023,
+  "bertscore_f1": 0.843,
+  "bertscore_p": 0.8477,
+  "bertscore_r": 0.8385
+ },
+ "train_min": 17.3,
+ "peak_gb": 3.49,
+ "decode_s_per_doc": 0.419,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 4,
+  "repetition_penalty": 1.0,
+  "temperature": 0,
+  "batch_size": 32,
+  "val_docs": 300
+ },
+ "zip": "E3_a3_adapter_20261029_013335.zip"
+}

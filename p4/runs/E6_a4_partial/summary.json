@@ -1,0 +1,23 @@
+{
+  "run": "E6_a4_partial",
+  "total_params": 88017155,
+  "trainable_params": 25683203,
+  "trainable_pct": 29.18,
+  "val": {
+    "macro_f1": 0.7854169643861607,
+    "macro_p": 0.7873066275850839,
+    "macro_r": 0.7857142857142857
+  },
+  "val_f1_at_0.5": 0.7502179396097872,
+  "threshold": 0.38999999999999996,
+  "steps": 3960,
+  "train_min": 47.6,
+  "test_infer_s": 20.5,
+  "peak_gpu_gb": 3.99,
+  "ckpt_mb": 102.7,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

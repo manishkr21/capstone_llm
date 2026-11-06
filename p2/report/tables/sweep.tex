@@ -1,0 +1,37 @@
+a6\_e2\_invsqrt & E2 & label\_weight=inv\_sqrt & 0.4857 & 0.5007 & +0.0150 & 0.605 \\
+c1\_a4\_lora & E2 & method=lora & 0.4857 & 0.4974 & +0.0117 & 0.605 \\
+a5\_e2\_focal & E2 & focal\_gamma=2.0, loss=focal & 0.4857 & 0.4945 & +0.0088 & 0.589 \\
+c7\_e2\_r32 & E2 & alpha=64, r=32 & 0.4857 & 0.4902 & +0.0045 & 0.605 \\
+a7\_e2\_casenorm & E2 & case\_norm=True & 0.4857 & 0.4853 & -0.0004 & 0.580 \\
+c10\_e2\_causal & E2 & attention=causal & 0.4857 & 0.4803 & -0.0054 & 0.562 \\
+c22\_e2\_lr2e-3 & E2 & lr=0.002 & 0.4857 & 0.4803 & -0.0054 & 0.584 \\
+c20\_e2\_ep25 & E2 & epochs=25, patience=8 & 0.4857 & 0.4793 & -0.0064 & 0.586 \\
+b1\_e2\_mlphead & E2 & head=mlp & 0.4857 & 0.4782 & -0.0075 & 0.568 \\
+a9\_e2\_nopresplit & E2 & presplit=False & 0.4857 & 0.4763 & -0.0094 & 0.555 \\
+a3\_e2\_oweight0.5 & E2 & o\_weight=0.5 & 0.4857 & 0.4732 & -0.0125 & 0.549 \\
+a1\_e2\_win1024 & E2 & window=1024, batch\_size=8, stride=512, window=1024 & 0.4857 & 0.4716 & -0.0141 & 0.570 \\
+c19\_a4\_full & E5 & method=full, lr=0.0001 & 0.4697 & 0.4627 & -0.0070 & 0.603 \\
+c17\_e5\_top6 & E5 & n\_train\_layers=6 & 0.4697 & 0.4618 & -0.0079 & 0.572 \\
+c6\_e2\_r8 & E2 & alpha=16, r=8 & 0.4857 & 0.4557 & -0.0300 & 0.561 \\
+c21\_e2\_lr5e-4 & E2 & lr=0.0005 & 0.4857 & 0.4526 & -0.0331 & 0.542 \\
+c4\_a3\_lora & E1 & alpha=32, method=lora, r=16, lr=0.001 & 0.4267 & 0.4510 & +0.0243 & 0.576 \\
+c3\_a3\_lorma & E1 & alpha=32, method=lorma, r=16, lr=0.001 & 0.4267 & 0.4384 & +0.0117 & 0.559 \\
+c8\_a4\_lorma\_pi & E2 & method=lorma\_pi & 0.4857 & 0.4366 & -0.0491 & 0.577 \\
+c11\_e1\_llrd0.8 & E1 & llrd=0.8 & 0.4267 & 0.4343 & +0.0076 & 0.563 \\
+a4\_e1\_oweight0.5 & E1 & o\_weight=0.5 & 0.4267 & 0.4317 & +0.0050 & 0.581 \\
+b2\_e2\_crf & E2 & head=crf & 0.4857 & 0.4303 & -0.0554 & 0.580 \\
+c15\_a2\_full\_dec & E4 & method=full, lr=0.0001 & 0.3892 & 0.4296 & +0.0404 & 0.513 \\
+c5\_e2\_attnonly & E2 & targets=['q', 'k', 'v', 'o'] & 0.4857 & 0.4274 & -0.0583 & 0.549 \\
+b3\_e1\_crf & E1 & head=crf & 0.4267 & 0.4263 & -0.0004 & 0.604 \\
+c12\_e1\_regular & E1 & dropout=0.2, weight\_decay=0.1 & 0.4267 & 0.4224 & -0.0043 & 0.575 \\
+a2\_e1\_win1024 & E1 & window=1024, batch\_size=8, stride=512, window=1024 & 0.4267 & 0.4162 & -0.0105 & 0.560 \\
+c9\_e3\_causal & E3 & attention=causal & 0.3564 & 0.4161 & +0.0597 & 0.537 \\
+c18\_e5\_top2 & E5 & n\_train\_layers=2 & 0.4697 & 0.4161 & -0.0536 & 0.522 \\
+a8\_e1\_casenorm & E1 & case\_norm=True & 0.4267 & 0.4155 & -0.0112 & 0.613 \\
+c16\_a2\_lorma\_dec & E4 & alpha=32, method=lorma, r=16 & 0.3892 & 0.3996 & +0.0104 & 0.488 \\
+d2\_e6\_a0.3\_T4 & E6 & alpha=0.3, temperature=4.0 & 0.3443 & 0.3631 & +0.0188 & 0.490 \\
+d3\_e6\_teacherE2 & E6 & teacher\_run=runs/E2\_a4\_lorma & 0.3443 & 0.3579 & +0.0136 & 0.519 \\
+c2\_a1\_lorma & E3 & method=lorma & 0.3564 & 0.3464 & -0.0100 & 0.490 \\
+c14\_a3\_bitfit & E1 & method=bitfit, lr=0.001 & 0.4267 & 0.3322 & -0.0945 & 0.475 \\
+c13\_a4\_ia3 & E2 & method=ia3, lr=0.003 & 0.4857 & 0.3257 & -0.1600 & 0.433 \\
+d1\_e6\_noKD & E6 & alpha=None, teacher\_run=None, temperature=None & 0.3443 & 0.3024 & -0.0419 & 0.447 \\

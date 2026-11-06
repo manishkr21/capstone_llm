@@ -1,0 +1,40 @@
+run_name: T12_e9_prompt_causal
+seed: 1337
+runs_dir: runs
+data:
+  dir: ../capstone_llm/data/hf/Phase_3_RR
+  context: window
+  max_sent_tokens: 128
+cv:
+  n_folds: 5
+  seed: 0
+model:
+  phase1_ckpt: runs/A1_gpt_clean_1B/best.pt
+  attention: causal
+  encdec_output: decoder
+  keep_layers: null
+  doc_layer: bilstm
+  hidden: 256
+  pos_buckets: 20
+  crf: true
+  dropout: 0.1
+peft:
+  method: prompt
+  n_prompt: 20
+train:
+  window: 512
+  chunk_sents: 128
+  chunks_per_step: 4
+  max_windows: 16
+  epochs: 20
+  patience: 6
+  lr: 0.003
+  head_lr: 0.001
+  weight_decay: 0.01
+  warmup_frac: 0.1
+  grad_clip: 1.0
+  logit_adjust_tau: 0.5
+infer:
+  window: 512
+  max_windows: 32
+distill: null

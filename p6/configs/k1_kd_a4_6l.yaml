@@ -1,0 +1,12 @@
+run_name: K1_kd_a4_6l
+model:
+  phase1_ckpt: runs/A4_efficient_clean_1B/best.pt
+  keep_layers: [0, 2, 4, 5, 8, 9]   # 6 of 10 blocks, keeps the global layers 2/5/8
+peft:
+  method: full
+kd:
+  teacher: F1_a4_full
+  alpha: 0.5
+  T: 2.0
+train:
+  epochs: 6

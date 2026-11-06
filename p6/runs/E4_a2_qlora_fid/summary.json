@@ -1,0 +1,29 @@
+{
+ "run": "E4_a2_qlora_fid",
+ "total_params": 26012160,
+ "trainable_params": 5406720,
+ "trainable_pct": 20.785,
+ "val_loss": 2.8163068444015855,
+ "val_metrics": {
+  "rouge1_f1": 0.383,
+  "rougeL_f1": 0.2098,
+  "words": 392.6433,
+  "distinct_trigram": 0.8575,
+  "bertscore_f1": 0.8234,
+  "bertscore_p": 0.8343,
+  "bertscore_r": 0.8128
+ },
+ "train_min": 25.6,
+ "peak_gb": 6.4,
+ "decode_s_per_doc": 0.606,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 4,
+  "repetition_penalty": 1.0,
+  "temperature": 0,
+  "batch_size": 32,
+  "val_docs": 300
+ },
+ "zip": "E4_a2_qlora_fid_20261029_014330.zip"
+}

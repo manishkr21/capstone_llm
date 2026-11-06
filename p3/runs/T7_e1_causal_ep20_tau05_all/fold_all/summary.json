@@ -1,0 +1,11 @@
+{
+  "run": "T7_e1_causal_ep20_tau05_all",
+  "fold": "all",
+  "total_params": 90319824,
+  "trainable_params": 2813136,
+  "trainable_pct": 3.115,
+  "epochs": 9,
+  "train_docs": 90,
+  "train_min": 9.09,
+  "steps": 441
+}

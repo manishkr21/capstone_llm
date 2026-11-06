@@ -1,0 +1,5 @@
+# KD round 4 with more weight on the teacher (alpha 0.3: 30% gold BCE, 70% distillation)
+inherit: y1_kd4_a4.yaml
+run_name: Y2_kd4_a4_alpha03
+seed: 2024
+distill: {teacher_logits: runs/TEACHER4_ens/train_logits.npy, alpha: 0.3, temperature: 2.0}

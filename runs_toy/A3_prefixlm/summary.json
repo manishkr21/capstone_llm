@@ -1,0 +1,30 @@
+{
+  "run_name": "A3_prefixlm",
+  "arch": "prefixlm",
+  "description": "Prefix-LM hybrid: bidirectional prompt + causal continuation in one stack, ALiBi",
+  "params_total": 363520,
+  "params_non_embedding": 265216,
+  "best_val_loss": 2.9964858293533325,
+  "best_val_ppl": 20.015076795876872,
+  "steps": 40,
+  "tokens_seen": 81920,
+  "train_seconds_this_session": 4.368886232376099,
+  "block_size": 256,
+  "eval_prefix_len": 192,
+  "peak_gpu_mem_gb": 0.094283776,
+  "distilled_from": null,
+  "compute": {
+    "monitored_hours": 0.001,
+    "sessions": 1,
+    "gpu_name": "NVIDIA H200 NVL",
+    "gpu_hours": 0.001,
+    "mean_cpu_pct": 9.3,
+    "mean_gpu_util_pct": 2.26,
+    "peak_ram_gb": 45.828,
+    "peak_proc_rss_gb": 1.493,
+    "peak_vram_gb": 11.134,
+    "peak_torch_alloc_gb": 0.088,
+    "mean_gpu_power_w": 93.09,
+    "energy_kwh": 0.0
+  }
+}

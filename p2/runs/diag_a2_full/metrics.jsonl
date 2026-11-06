@@ -1,0 +1,6 @@
+{"epoch": 1, "step": 93, "train_loss": 0.7918, "elapsed_s": 6.2, "macro_f1": 0.1147, "macro_p": 0.1081, "macro_r": 0.1236, "micro_f1": 0.2141, "span_only_f1": 0.2215}
+{"epoch": 2, "step": 185, "train_loss": 0.2311, "elapsed_s": 13.6, "macro_f1": 0.0963, "macro_p": 0.1126, "macro_r": 0.0898, "micro_f1": 0.1716, "span_only_f1": 0.1786}
+{"epoch": 3, "step": 277, "train_loss": 0.1791, "elapsed_s": 19.7, "macro_f1": 0.1303, "macro_p": 0.1756, "macro_r": 0.1227, "micro_f1": 0.238, "span_only_f1": 0.2537}
+{"epoch": 4, "step": 370, "train_loss": 0.1511, "elapsed_s": 27.0, "macro_f1": 0.1339, "macro_p": 0.1568, "macro_r": 0.1342, "micro_f1": 0.2289, "span_only_f1": 0.2578}
+{"epoch": 5, "step": 462, "train_loss": 0.13, "elapsed_s": 33.9, "macro_f1": 0.1493, "macro_p": 0.1711, "macro_r": 0.1472, "micro_f1": 0.2259, "span_only_f1": 0.2648}
+{"epoch": 6, "step": 555, "train_loss": 0.1237, "elapsed_s": 41.3, "macro_f1": 0.1457, "macro_p": 0.1703, "macro_r": 0.1439, "micro_f1": 0.2266, "span_only_f1": 0.2666}

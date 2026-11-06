@@ -1,0 +1,24 @@
+{
+ "run": "T2_tfidf_char",
+ "kind": "tfidf_lr (auxiliary stacking input)",
+ "args": {
+  "name": "T2_tfidf_char",
+  "analyzer": "char_wb",
+  "ngram": [
+   3,
+   4
+  ],
+  "max_features": 200000,
+  "C": 4.0,
+  "jobs": 6
+ },
+ "vocab": 196647,
+ "val_crossfit": {
+  "macro_f1": 0.3931,
+  "macro_p": 0.3927,
+  "macro_r": 0.4154,
+  "micro_f1": 0.4835,
+  "subset_acc": 0.0446
+ },
+ "train_min": 31.8
+}

@@ -1,0 +1,5 @@
+inherit: base.yaml
+run_name: E3_a3_adapter
+model: {phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt}
+peft: {method: adapter, bottleneck: 64}
+train: {lr: 2.0e-4}

@@ -1,0 +1,6 @@
+# T1: E1 with 512-sentence training chunks (the BiLSTM sees most of a document; targets Dissent, rulings)
+inherit: ../e1_a4_lorma.yaml
+run_name: T1_e1_longchunk
+train:
+  chunk_sents: 512
+  chunks_per_step: 1

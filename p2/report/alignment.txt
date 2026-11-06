@@ -1,0 +1,4 @@
+presplit=False: oracle macro-F1 0.9866  micro-F1 0.9818  tokens 458,158
+   lowest: PREC 0.9324, STAT 0.9802, RESP 0.9816, COURT 0.9822
+presplit=True: oracle macro-F1 0.9945  micro-F1 0.993  tokens 465,081
+   lowest: COURT 0.9822, STAT 0.9849, APP 0.9853, AUTH 0.991

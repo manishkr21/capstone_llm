@@ -1,0 +1,5 @@
+# KD round 2: same 6-block A4 student, stronger 5-model teacher (V2, E1, V3, E6, E3), 6 epochs
+inherit: e10_kd_a4_small.yaml
+run_name: W6_kd2_a4_small
+train: {epochs: 6, eval_every: 1600}
+distill: {teacher_logits: runs/TEACHER2_ens/train_logits.npy, alpha: 0.5, temperature: 2.0}

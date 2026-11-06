@@ -1,0 +1,29 @@
+{
+ "run": "L3_a3_full_ep6",
+ "total_params": 81280512,
+ "trainable_params": 81280512,
+ "trainable_pct": 100.0,
+ "val_loss": 2.096178921164887,
+ "val_metrics": {
+  "rouge1_f1": 0.5007,
+  "rougeL_f1": 0.2461,
+  "words": 417.2467,
+  "distinct_trigram": 0.9996,
+  "bertscore_f1": 0.8484,
+  "bertscore_p": 0.8502,
+  "bertscore_r": 0.8467
+ },
+ "train_min": 52.8,
+ "peak_gb": 4.62,
+ "decode_s_per_doc": 0.537,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 32,
+  "val_docs": 300
+ },
+ "zip": "L3_a3_full_ep6_20261029_142255.zip"
+}

@@ -1,0 +1,25 @@
+{
+ "run": "T3_tfidf_svm",
+ "kind": "tfidf_lr (auxiliary stacking input)",
+ "args": {
+  "name": "T3_tfidf_svm",
+  "analyzer": "word",
+  "ngram": [
+   1,
+   2
+  ],
+  "max_features": 400000,
+  "C": 0.5,
+  "jobs": 10,
+  "model": "svm"
+ },
+ "vocab": 400000,
+ "val_crossfit": {
+  "macro_f1": 0.4047,
+  "macro_p": 0.4094,
+  "macro_r": 0.419,
+  "micro_f1": 0.4977,
+  "subset_acc": 0.0688
+ },
+ "train_min": 5.6
+}

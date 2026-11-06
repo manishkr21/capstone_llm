@@ -1,0 +1,3 @@
+inherit: e3_a4_partial.yaml
+run_name: E3b_a4_partial_seed1
+seed: 1

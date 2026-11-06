@@ -1,0 +1,4 @@
+# T19: T8, a third seed (same folds) -- for a seed ensemble
+inherit: ../tune2/t8_e2_causal_ep20_tau05.yaml
+run_name: T19_t8_seed3
+seed: 7

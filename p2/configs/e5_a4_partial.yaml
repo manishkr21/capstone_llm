@@ -1,0 +1,11 @@
+# E5 - A4 efficient decoder, partial / layer-wise fine-tuning: only the top 4 of 10 blocks.
+inherit: base.yaml
+run_name: E5_a4_partial
+model:
+  phase1_ckpt: runs/A4_efficient/best.pt
+  attention: bidirectional
+peft:
+  method: partial
+  n_train_layers: 4
+train:
+  lr: 2.0e-4

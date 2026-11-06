@@ -1,0 +1,4 @@
+# V1: E6 (A4 partial, top 4 blocks) reading the last 16 chunks (8,192 tokens; whole doc for 87% of val)
+inherit: e6_a4_partial.yaml
+run_name: V1_e6_16ch
+data: {n_chunks: 16}

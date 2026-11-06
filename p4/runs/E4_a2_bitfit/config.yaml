@@ -1,0 +1,32 @@
+run_name: E4_a2_bitfit
+seed: 1337
+runs_dir: runs
+data:
+  strategy: last
+  n_chunks: 8
+  chunk_len: 512
+model:
+  phase1_ckpt: runs/A2_encdec_clean_1B/best.pt
+  attention: causal
+  encdec_output: decoder
+  keep_layers: null
+  doc_layer: gru_attn
+  hidden: 256
+  dropout: 0.1
+  max_chunks: 64
+peft:
+  method: bitfit
+train:
+  epochs: 2
+  docs_per_step: 16
+  docs_per_micro: 4
+  max_chunks: 32
+  lr: 0.001
+  head_lr: 0.001
+  weight_decay: 0.01
+  warmup_frac: 0.06
+  grad_clip: 1.0
+  class_weight: true
+  eval_every: 250
+  log_every: 50
+distill: null

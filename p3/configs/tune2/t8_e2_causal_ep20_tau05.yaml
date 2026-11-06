@@ -1,0 +1,9 @@
+# T8: T4 (A1 LoRA causal) + 20 epochs + tau 0.5 (T4 peaked at its last epoch in 3/5 folds)
+inherit: ../e2_a1_lora.yaml
+run_name: T8_e2_causal_ep20_tau05
+model:
+  attention: causal
+train:
+  epochs: 20
+  patience: 6
+  logit_adjust_tau: 0.5

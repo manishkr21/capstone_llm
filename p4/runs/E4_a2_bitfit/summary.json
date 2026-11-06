@@ -1,0 +1,23 @@
+{
+  "run": "E4_a2_bitfit",
+  "total_params": 89895939,
+  "trainable_params": 603139,
+  "trainable_pct": 0.671,
+  "val": {
+    "macro_f1": 0.6614235490188922,
+    "macro_p": 0.6630278433146299,
+    "macro_r": 0.6619718309859155
+  },
+  "val_f1_at_0.5": 0.5329660784759507,
+  "threshold": 0.29,
+  "steps": 3960,
+  "train_min": 50.2,
+  "test_infer_s": 28.7,
+  "peak_gpu_gb": 4.65,
+  "ckpt_mb": 2.5,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

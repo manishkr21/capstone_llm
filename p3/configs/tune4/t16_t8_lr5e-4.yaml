@@ -1,0 +1,5 @@
+# T16: T8 with half the learning rate (fold 3 peaked at epoch 3)
+inherit: ../tune2/t8_e2_causal_ep20_tau05.yaml
+run_name: T16_t8_lr5e-4
+train:
+  lr: 5.0e-4

@@ -1,0 +1,6 @@
+# A3 full fine-tuning, 5 epochs (A3 so far only adapters / AdaLoRA)
+inherit: base.yaml
+run_name: Y4_a3_full_ep5
+model: {phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt}
+peft: {method: full}
+train: {lr: 5.0e-5, epochs: 5, eval_every: 1300}

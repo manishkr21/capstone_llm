@@ -1,0 +1,4 @@
+# Y2 recipe trained on train + validation; teacher logits for the validation documents come from the teachers'
+# out-of-sample validation predictions (they never trained on validation)
+inherit: y2_kd4_a4_alpha03.yaml
+distill: {teacher_logits: runs/TEACHER4_ens/trainval_logits.npy, alpha: 0.3, temperature: 2.0}

@@ -1,0 +1,22 @@
+{
+  "runs/A1_gpt/best1.pt": {
+    "run": "A1_gpt",
+    "val_loss": 2.4303394228219988,
+    "val_ppl": 11.362738198202042
+  },
+  "runs/A2_encdec/best.pt": {
+    "run": "A2_encdec",
+    "val_loss": 3.0815405786037444,
+    "val_ppl": 21.791948759149957
+  },
+  "runs/A3_prefixlm/best.pt": {
+    "run": "A3_prefixlm",
+    "val_loss": 2.493957507610321,
+    "val_ppl": 12.109103288249967
+  },
+  "runs/A4_efficient/best.pt": {
+    "run": "A4_efficient",
+    "val_loss": 2.444792404770851,
+    "val_ppl": 11.528156160194484
+  }
+}

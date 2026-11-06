@@ -1,0 +1,33 @@
+# Shared Phase-4 settings (court judgment prediction); every experiment inherits this file.
+run_name: base
+seed: 1337
+runs_dir: runs
+data:
+  strategy: last        # last | first | first_last | spread  (which chunks of a judgment are read)
+  n_chunks: 8           # chunks per document (8 x 512 = 4,096 tokens; median judgment ~3k-4k tokens)
+  chunk_len: 512
+model:
+  phase1_ckpt: null     # relative to ../capstone_llm
+  attention: causal     # A1/A4 keep their Phase-1 causal mask (Phase-3 finding)
+  encdec_output: decoder  # A2: decoder states (the Phase-1 A2 encoder output is collapsed)
+  keep_layers: null
+  doc_layer: gru_attn   # gru_attn | attn | mean
+  hidden: 256
+  dropout: 0.1
+  max_chunks: 64
+peft:
+  method: lorma
+train:
+  epochs: 2
+  docs_per_step: 16
+  docs_per_micro: 2     # 16 docs per optimizer step either way; 2 per forward fits beside other GPU tenants
+  max_chunks: 16        # chunks per backbone forward
+  lr: 1.0e-3
+  head_lr: 1.0e-3
+  weight_decay: 0.01
+  warmup_frac: 0.06
+  grad_clip: 1.0
+  class_weight: true    # train is 59/41, validation and test are 50/50
+  eval_every: 250
+  log_every: 50
+distill: null

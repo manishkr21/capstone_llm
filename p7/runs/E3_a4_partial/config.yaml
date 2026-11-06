@@ -1,0 +1,33 @@
+run_name: E3_a4_partial
+seed: 1337
+model:
+  phase1_ckpt: runs/A4_efficient_clean_1B/best.pt
+  attention: causal
+  encdec_output: decoder
+  keep_layers: null
+  chunk_pool: mean
+  dim: 256
+  chunk_agg: max
+  win_agg: lse
+  win_temp: 0.05
+peft:
+  method: partial
+  n_train_layers: 4
+train:
+  epochs: 10
+  queries: 8
+  n_pos: 2
+  n_hard: 3
+  hard_pool: 30
+  max_wins: 12
+  chunk_len: 512
+  train_chunks: 4
+  eval_chunks: 32
+  max_tokens: 32768
+  tau: 0.05
+  lr: 0.0001
+  weight_decay: 0.01
+  warmup_frac: 0.05
+  grad_clip: 1.0
+  log_every: 20
+distill: null

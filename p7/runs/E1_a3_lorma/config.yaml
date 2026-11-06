@@ -1,0 +1,34 @@
+run_name: E1_a3_lorma
+seed: 1337
+model:
+  phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt
+  attention: causal
+  encdec_output: decoder
+  keep_layers: null
+  chunk_pool: mean
+  dim: 256
+  chunk_agg: max
+  win_agg: lse
+  win_temp: 0.05
+peft:
+  method: lorma
+  r: 32
+  alpha: 64
+train:
+  epochs: 10
+  queries: 8
+  n_pos: 2
+  n_hard: 3
+  hard_pool: 30
+  max_wins: 12
+  chunk_len: 512
+  train_chunks: 4
+  eval_chunks: 32
+  max_tokens: 32768
+  tau: 0.05
+  lr: 0.0005
+  weight_decay: 0.01
+  warmup_frac: 0.05
+  grad_clip: 1.0
+  log_every: 20
+distill: null

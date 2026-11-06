@@ -1,0 +1,12 @@
+{"epoch": 1, "step": 94, "train_loss": 0.6832, "elapsed_s": 17.9, "macro_f1": 0.2312, "macro_p": 0.2261, "macro_r": 0.2527, "micro_f1": 0.4182, "span_only_f1": 0.4254}
+{"epoch": 2, "step": 188, "train_loss": 0.046, "elapsed_s": 39.9, "macro_f1": 0.3559, "macro_p": 0.3559, "macro_r": 0.3668, "micro_f1": 0.5597, "span_only_f1": 0.592}
+{"epoch": 3, "step": 282, "train_loss": 0.0251, "elapsed_s": 64.7, "macro_f1": 0.3882, "macro_p": 0.4075, "macro_r": 0.3858, "micro_f1": 0.5655, "span_only_f1": 0.585}
+{"epoch": 4, "step": 376, "train_loss": 0.0158, "elapsed_s": 91.4, "macro_f1": 0.4231, "macro_p": 0.4214, "macro_r": 0.4501, "micro_f1": 0.5774, "span_only_f1": 0.5944}
+{"epoch": 5, "step": 470, "train_loss": 0.0107, "elapsed_s": 116.8, "macro_f1": 0.3887, "macro_p": 0.4316, "macro_r": 0.3958, "micro_f1": 0.5443, "span_only_f1": 0.5643}
+{"epoch": 6, "step": 564, "train_loss": 0.008, "elapsed_s": 142.8, "macro_f1": 0.4478, "macro_p": 0.4848, "macro_r": 0.4535, "micro_f1": 0.591, "span_only_f1": 0.6113}
+{"epoch": 7, "step": 658, "train_loss": 0.0048, "elapsed_s": 168.9, "macro_f1": 0.4659, "macro_p": 0.4889, "macro_r": 0.4741, "micro_f1": 0.6058, "span_only_f1": 0.6211}
+{"epoch": 8, "step": 752, "train_loss": 0.0042, "elapsed_s": 194.7, "macro_f1": 0.4454, "macro_p": 0.4506, "macro_r": 0.4708, "micro_f1": 0.5981, "span_only_f1": 0.6151}
+{"epoch": 9, "step": 846, "train_loss": 0.0023, "elapsed_s": 221.4, "macro_f1": 0.4379, "macro_p": 0.4768, "macro_r": 0.4358, "micro_f1": 0.5996, "span_only_f1": 0.6181}
+{"epoch": 10, "step": 940, "train_loss": 0.0013, "elapsed_s": 248.2, "macro_f1": 0.419, "macro_p": 0.4534, "macro_r": 0.4202, "micro_f1": 0.5891, "span_only_f1": 0.6036}
+{"epoch": 11, "step": 1034, "train_loss": 0.0011, "elapsed_s": 276.4, "macro_f1": 0.4418, "macro_p": 0.4546, "macro_r": 0.4615, "micro_f1": 0.5958, "span_only_f1": 0.6149}
+{"epoch": 12, "step": 1128, "train_loss": 0.0007, "elapsed_s": 305.8, "macro_f1": 0.4473, "macro_p": 0.4735, "macro_r": 0.4575, "micro_f1": 0.6211, "span_only_f1": 0.6428}

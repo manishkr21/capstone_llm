@@ -1,0 +1,40 @@
+# Shared Phase-3 settings; every experiment config inherits this file.
+run_name: base
+seed: 1337
+runs_dir: runs
+data:
+  dir: ../capstone_llm/data/hf/Phase_3_RR   # relative to p3/
+  context: window        # window: pack neighbouring sentences into one backbone window | none: sentence only
+  max_sent_tokens: 128   # p95 sentence is 72-84 words
+cv:
+  n_folds: 5             # document-level folds over train + dev (90 docs), stratified by domain
+  seed: 0
+model:
+  phase1_ckpt: null      # relative to ../capstone_llm
+  attention: causal      # A1/A4: causal | bidirectional
+  encdec_output: decoder # A2: tag from decoder states (the Phase-1 A2 encoder output is collapsed)
+  keep_layers: null
+  doc_layer: bilstm      # bilstm over the sentence vectors of a document | none
+  hidden: 256
+  pos_buckets: 20        # relative position of the sentence in the document
+  crf: true              # sentence-level linear-chain CRF + Viterbi
+  dropout: 0.1
+peft:
+  method: lorma
+train:
+  window: 512            # tokens per backbone window
+  chunk_sents: 128       # consecutive sentences per training chunk
+  chunks_per_step: 4
+  max_windows: 16
+  epochs: 12
+  patience: 4
+  lr: 1.0e-3             # backbone (PEFT) parameters
+  head_lr: 1.0e-3        # BiLSTM, CRF, embeddings, output layer
+  weight_decay: 0.01
+  warmup_frac: 0.1
+  grad_clip: 1.0
+  logit_adjust_tau: 1.0  # Menon et al. (2021) logit-adjusted loss for the rare roles; 0 = off
+infer:
+  window: 512
+  max_windows: 32
+distill: null

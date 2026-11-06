@@ -1,0 +1,5 @@
+# T23: T10 (A4 QLoRA causal) + lexical cue flags (citations, speaker, court level; rr/data.py CUES) for the most-confused roles
+inherit: ../tune2/t10_e5_qlora_causal.yaml
+run_name: T23_t10_cues
+model:
+  cues: true

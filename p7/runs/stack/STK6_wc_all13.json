@@ -1,0 +1,32 @@
+{
+ "name": "STK6_wc_all13",
+ "neural": [],
+ "blend": [
+  "E2_a1_full",
+  "E2b_a1_full_seed1",
+  "E2c_a1_full_seed2",
+  "E2d_a1_full_hard",
+  "E1_a3_lorma",
+  "E1b_a3_lorma_seed1",
+  "E3_a4_partial",
+  "E3b_a4_partial_seed1",
+  "E5_a3_ia3",
+  "E4_a2_qlora",
+  "E6_a1_prefix",
+  "E7_a4_prompt",
+  "K1_kd_a1_4l"
+ ],
+ "w": 0.4,
+ "depth": 100,
+ "first": "wc60_g2",
+ "trees": 600,
+ "lr": 0.03,
+ "leaves": 15,
+ "refit": true,
+ "dev": {
+  "f1": 0.4992,
+  "p": 0.5436,
+  "r": 0.4615
+ },
+ "zip": "/home/manish/capstone_llm/p7/submissions/STK6_wc_all13_20261106_192849.zip"
+}

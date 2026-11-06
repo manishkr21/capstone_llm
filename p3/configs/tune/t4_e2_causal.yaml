@@ -1,0 +1,5 @@
+# T4: E2 with causal attention (A1 was pretrained causally only)
+inherit: ../e2_a1_lora.yaml
+run_name: T4_e2_causal
+model:
+  attention: causal

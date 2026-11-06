@@ -1,0 +1,7 @@
+# W1: A4 full fine-tuning (only partial fine-tuning was tried on A4 so far), last 16 chunks
+inherit: base.yaml
+run_name: W1_a4_full_16ch
+model: {phase1_ckpt: runs/A4_efficient_clean_1B/best.pt}
+peft: {method: full}
+data: {n_chunks: 16}
+train: {lr: 5.0e-5}

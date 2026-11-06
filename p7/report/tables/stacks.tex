@@ -1,0 +1,7 @@
+STK0\_lex & lexical features only & 0 & -- & 0.4769 & 0.519 & 0.441 \\
+STK1\_e2 & + E2 out-of-fold scores as features & 0 & -- & 0.4725 & 0.514 & 0.437 \\
+STK2\_lex\_blend4 & lexical LTR + 4 bi-encoders blended (row z) & 4 & 0.3 & 0.4869 & 0.530 & 0.450 \\
+STK4\_rc\_blend4 & row+column features and first stage, + 4 bi-encoders (row+column) & 4 & 0.5 & 0.4914 & 0.535 & 0.454 \\
+STK5\_all13\_w075 & as STK4, 13 bi-encoders & 13 & 0.75 & 0.4914 & 0.535 & 0.454 \\
+STK6\_wc\_all13 & + window-level lexical features and first stage, 13 bi-encoders & 13 & 0.4 & 0.4992 & 0.544 & 0.462 \\
+C1 cross-encoder & STK4 top-30 re-ordered by z(STK4) + 0.25 z(cross) & -- & -- & 0.4958 & -- & -- \\

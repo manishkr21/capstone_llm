@@ -1,0 +1,4 @@
+# V4: partial fine-tuning (top 4 of 8 blocks) on A3
+inherit: e6_a4_partial.yaml
+run_name: V4_a3_partial
+model: {phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt}

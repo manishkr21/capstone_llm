@@ -1,0 +1,23 @@
+{
+  "run": "W1_a4_full_16ch",
+  "total_params": 88017155,
+  "trainable_params": 88017155,
+  "trainable_pct": 100.0,
+  "val": {
+    "macro_f1": 0.7585034013605443,
+    "macro_p": 0.7587566295130321,
+    "macro_r": 0.7585513078470825
+  },
+  "val_f1_at_0.5": 0.7535208772968568,
+  "threshold": 0.5099999999999999,
+  "steps": 3960,
+  "train_min": 97.4,
+  "test_infer_s": 26.7,
+  "peak_gpu_gb": 9.24,
+  "ckpt_mb": 352.1,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 16,
+    "chunk_len": 512
+  }
+}

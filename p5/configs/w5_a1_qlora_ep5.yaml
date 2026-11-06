@@ -1,0 +1,4 @@
+# E6 (A1 QLoRA) trained for 5 epochs
+inherit: e6_a1_qlora.yaml
+run_name: W5_a1_qlora_ep5
+train: {epochs: 5, eval_every: 1300}

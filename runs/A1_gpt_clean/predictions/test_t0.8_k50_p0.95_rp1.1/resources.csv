@@ -1,0 +1,3 @@
+timestamp,unix_time,session,elapsed_min,window_s,n_polls,phase,step,cpu_pct,cpu_pct_max,proc_cpu_pct,cpu_cores,load_avg_1m,ram_used_gb,ram_total_gb,ram_pct,proc_rss_gb,gpu_name,gpu_util_pct,gpu_util_pct_max,gpu_mem_bw_pct,vram_used_gb,vram_total_gb,gpu_power_w,gpu_temp_c,torch_alloc_gb,torch_reserved_gb,torch_peak_alloc_gb
+2026-10-14T18:49:05,1791983945.6,20261014-184805,1.0,60.1,12,generate_test,,6.817,9.6,105.092,32,3.395,27.843,125.788,22.1,1.419,NVIDIA H200 NVL,74.25,81,11.833,5.715,140.401,210.313,51,0.988,4.443,1.151
+2026-10-14T18:49:12,1791983952.3,20261014-184805,1.11,6.7,2,generate_test,,7.35,7.5,100.1,32,3.67,27.438,125.788,21.8,1.419,NVIDIA H200 NVL,67.5,73,10.5,6.728,140.401,197.093,49,0.909,5.457,1.212

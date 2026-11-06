@@ -1,0 +1,57 @@
+{
+  "runs/A1_gpt/best1.pt": {
+    "run": "A1_gpt",
+    "val_loss": 2.5595524579286577,
+    "val_ppl": 12.93002928835662
+  },
+  "runs/A1_gpt_clean/best.pt": {
+    "run": "A1_gpt_clean",
+    "val_loss": 2.469814994931221,
+    "val_ppl": 11.820259841363667
+  },
+  "runs/A2_encdec/best.pt": {
+    "run": "A2_encdec",
+    "val_loss": 3.2292611956596375,
+    "val_ppl": 25.260987148192136
+  },
+  "runs/A2_encdec_clean/best.pt": {
+    "run": "A2_encdec_clean",
+    "val_loss": 3.1050546944141386,
+    "val_ppl": 22.31043919830696
+  },
+  "runs/A2_encdec_clean_1B/best.pt": {
+    "run": "A2_encdec_clean_1B",
+    "val_loss": 2.57440048456192,
+    "val_ppl": 13.123447090480534
+  },
+  "runs/A3_prefixlm/best.pt": {
+    "run": "A3_prefixlm",
+    "val_loss": 2.631364631652832,
+    "val_ppl": 13.892715411563326
+  },
+  "runs/A3_prefixlm_clean/best.pt": {
+    "run": "A3_prefixlm_clean",
+    "val_loss": 2.5195868372917176,
+    "val_ppl": 12.423462691575791
+  },
+  "runs/A3_prefixlm_clean_1B/best.pt": {
+    "run": "A3_prefixlm_clean_1B",
+    "val_loss": 2.194574424624443,
+    "val_ppl": 8.976180202585518
+  },
+  "runs/A4_efficient/best.pt": {
+    "run": "A4_efficient",
+    "val_loss": 2.589261570572853,
+    "val_ppl": 13.319932140908179
+  },
+  "runs/A4_efficient_clean/best.pt": {
+    "run": "A4_efficient_clean",
+    "val_loss": 2.420530989766121,
+    "val_ppl": 11.251832336755687
+  },
+  "runs/A4_efficient_clean_1B/best.pt": {
+    "run": "A4_efficient_clean_1B",
+    "val_loss": 2.1115309685468673,
+    "val_ppl": 8.260878753916018
+  }
+}

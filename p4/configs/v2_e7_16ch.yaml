@@ -1,0 +1,4 @@
+# V2: E7 (A3 gradual unfreezing) reading the last 16 chunks
+inherit: e7_a3_gradual.yaml
+run_name: V2_e7_16ch
+data: {n_chunks: 16}

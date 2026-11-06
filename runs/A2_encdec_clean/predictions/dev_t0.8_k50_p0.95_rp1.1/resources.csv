@@ -1,0 +1,3 @@
+timestamp,unix_time,session,elapsed_min,window_s,n_polls,phase,step,cpu_pct,cpu_pct_max,proc_cpu_pct,cpu_cores,load_avg_1m,ram_used_gb,ram_total_gb,ram_pct,proc_rss_gb,gpu_name,gpu_util_pct,gpu_util_pct_max,gpu_mem_bw_pct,vram_used_gb,vram_total_gb,gpu_power_w,gpu_temp_c,torch_alloc_gb,torch_reserved_gb,torch_peak_alloc_gb
+2026-10-11T14:14:49,1791708289.2,20261011-141413,0.59,35.5,8,generate_dev,,7.037,8.8,101.575,32,2.367,50.98,125.788,40.5,1.351,"Failed to initialize NVML: Driver/library version mismatch
+NVML library version: 580.178",,,,,,,,0.828,3.137,0.886

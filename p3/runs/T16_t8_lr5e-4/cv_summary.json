@@ -1,0 +1,47 @@
+{
+  "run": "T16_t8_lr5e-4",
+  "oof": {
+    "all": {
+      "macro_f1": 0.4966,
+      "macro_p": 0.537,
+      "macro_r": 0.5107,
+      "accuracy": 0.6262
+    },
+    "CL": {
+      "macro_f1": 0.5089,
+      "macro_p": 0.5485,
+      "macro_r": 0.5396,
+      "accuracy": 0.6344
+    },
+    "IT": {
+      "macro_f1": 0.5287,
+      "macro_p": 0.5245,
+      "macro_r": 0.5362,
+      "accuracy": 0.6122
+    }
+  },
+  "oof_per_label": {
+    "ArgumentPetitioner": 0.6003,
+    "ArgumentRespondent": 0.5666,
+    "Dissent": 0.0276,
+    "Fact": 0.7431,
+    "Issue": 0.6054,
+    "None": 0.4448,
+    "PrecedentNotReliedUpon": 0.2781,
+    "PrecedentOverruled": 0.0,
+    "PrecedentReliedUpon": 0.5478,
+    "RatioOfTheDecision": 0.6409,
+    "RulingByLowerCourt": 0.4884,
+    "RulingByPresentCourt": 0.7471,
+    "Statute": 0.7657
+  },
+  "fold_macro_f1_mean": 0.5517,
+  "fold_macro_f1_std": 0.0218,
+  "trainable_params": 2370768,
+  "total_params": 84437712,
+  "trainable_pct": 2.808,
+  "train_min_per_fold": 12.54,
+  "peak_gpu_gb": 3.36,
+  "ckpt_mb": 9.5,
+  "dev_infer_s": 2.43
+}

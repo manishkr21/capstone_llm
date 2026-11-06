@@ -1,0 +1,4 @@
+# E1 (A4 LoRMA) trained for 5 epochs
+inherit: e1_a4_lorma.yaml
+run_name: W4_a4_lorma_ep5
+train: {epochs: 5, eval_every: 1300}

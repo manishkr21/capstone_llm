@@ -1,0 +1,24 @@
+{
+ "run": "D_v1_mean",
+ "feats": [
+  "V1_e6_16ch"
+ ],
+ "layer": "mean",
+ "val": {
+  "macro_f1": 0.776507049100632,
+  "macro_p": 0.7774191845997085,
+  "macro_r": 0.7766599597585513
+ },
+ "val_f1_at_0.5": 0.7407310802250624,
+ "threshold": 0.57,
+ "seed_f1_mean": 0.767819508323285,
+ "seed_f1_std": 0.0018201697730797295,
+ "total_params": 215555,
+ "trainable_params": 215555,
+ "trainable_pct": 100.0,
+ "train_min": 7.8,
+ "data": {
+  "strategy": "cached-all",
+  "n_chunks": 48
+ }
+}

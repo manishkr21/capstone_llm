@@ -1,0 +1,25 @@
+{
+ "run_name": "E5_a3_ia3",
+ "params": {
+  "total_params": 81514240,
+  "trainable_params": 233728,
+  "trainable_pct": 0.287
+ },
+ "train_min": 15.4,
+ "dev_encode_sec": 14.6,
+ "dev_neural": {
+  "f1": 0.3669,
+  "p": 0.3995,
+  "r": 0.3392
+ },
+ "dev_fused": {
+  "f1": 0.4691,
+  "lam": 0.5,
+  "pen": 1.0
+ },
+ "dev_lexical": 0.4436,
+ "peak_mem_gb": 22.5,
+ "ckpt_mb": 0.9,
+ "zip_neural": "/home/manish/capstone_llm/p7/submissions/E5_a3_ia3_neural_20261104_030009.zip",
+ "zip_fused": "/home/manish/capstone_llm/p7/submissions/E5_a3_ia3_fused_20261104_030010.zip"
+}

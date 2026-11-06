@@ -1,0 +1,13 @@
+# T13: E6 (KD, A4 6/10-layer student, full FT) with the stronger T7 teacher, causal, 20 epochs, tau 0.5
+inherit: ../e6_kd_a4_small.yaml
+run_name: T13_kd_t7
+model:
+  attention: causal
+train:
+  epochs: 20
+  patience: 6
+  logit_adjust_tau: 0.5
+distill:
+  teacher_run: runs/T7_e1_causal_ep20_tau05
+  alpha: 0.5
+  temperature: 2.0

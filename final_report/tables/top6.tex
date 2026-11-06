@@ -1,0 +1,56 @@
+{\scriptsize
+\begin{longtable}{@{}c>{\raggedright\arraybackslash}p{3.2cm}rr>{\raggedright\arraybackslash}p{7.6cm}@{}}
+\toprule
+\# & Submission & Codabench & Local & Method\\\midrule
+\endhead
+\multicolumn{5}{@{}p{\linewidth}@{}}{\textbf{Phase 1 --- Legal LM pre-training} (BERTScore F1; all decoded with temperature 0.8, top-$k$ 50, top-$p$ 0.95, repetition penalty 1.1)}\\
+1 & submission\_2026-09-26\_22-29-00 & 0.8286 & 0.8286 & A1 decoder-only GPT (82.1M), R0: starter corpus, 200M tokens.\\
+2 & submission\_2026-09-27\_01-22-10 & 0.8285 & 0.8255 & A3 prefix-LM with ALiBi (81.3M), R0.\\
+3 & submission\_2026-09-27\_01-29-15 & 0.8280 & 0.8269 & A4 efficient decoder: RoPE, grouped-query and sliding-window attention (87.5M), R0.\\
+4 & submission\_2026-09-26\_22-38-32 & 0.8184 & 0.8170 & A2 encoder--decoder (89.4M), R0.\\
+5 & submission.zip (26 Sep) & 0.8006 & -- & Early upload before the four-architecture runs; the file name does not identify the model.\\
+6 & submission.zip (25 Sep) & 0.8002 & -- & Early upload, as above.\\\midrule
+\multicolumn{5}{@{}p{\linewidth}@{}}{\textbf{Phase 2 --- Legal NER} (strict macro-F1; BIO tags over BPE tokens, constrained Viterbi decoding)}\\
+1 & E2\_a4\_lorma & 0.4970 & 0.4857 & A4 + LoRMA ($r=16$, attention and MLP projections), bidirectional attention; 2.2M trained parameters.\\
+2 & E1\_a3\_full & 0.4815 & 0.4267 & A3 prefix-LM, full fine-tuning.\\
+3 & E5\_a4\_partial & 0.4753 & 0.4697 & A4, partial fine-tuning of the top blocks.\\
+4 & E3\_a1\_lora & 0.4239 & 0.3564 & A1 + LoRA.\\
+5 & E4\_a2\_adapter & 0.4015 & 0.3892 & A2 encoder--decoder + Houlsby adapters.\\
+6 & E6\_kd\_a3\_small & 0.3799 & 0.3443 & Knowledge distillation into a 4-block A3 student (52.9M) from the full A3 teacher.\\\midrule
+\multicolumn{5}{@{}p{\linewidth}@{}}{\textbf{Phase 3 --- Rhetorical roles} (macro-F1; sentence windows $\rightarrow$ BiLSTM $\rightarrow$ CRF, 5-fold models averaged)}\\
+1 & T14\_t8\_win1024 & 0.5750 & 0.5007 & A1 + LoRA ($r=16$), causal mask, 20 epochs, logit adjustment $\tau=0.5$, 1,024-token sentence windows.\\
+2 & T15\_t8\_r32 & 0.5736 & 0.4926 & As T8 (below) with LoRA rank 32.\\
+3 & C6\_ens\_8\_nocal & 0.5711 & 0.5200 & Average of 8 taggers (T14, T17, T18, T19, T7, T13, T10, T9), no class-bias calibration.\\
+4 & T8\_e2\_causal\_ep20\_tau05 & 0.5709 & 0.4915 & A1 + LoRA, causal mask, 20 epochs, $\tau=0.5$, 512-token windows.\\
+5 & C7\_ens\_fold\_plus\_all & 0.5707 & 0.5211 & C7 ensemble (8 taggers incl.\ lexical cue flags) from fold models plus all-data retrains.\\
+6 & C5\_ens\_a1x4\_nocal & 0.5696 & 0.5179 & Average of four A1 LoRA taggers (T14, T17 hidden 512, T18 and T19 other seeds), uncalibrated.\\\midrule
+\multicolumn{5}{@{}p{\linewidth}@{}}{\textbf{Phase 4 --- Judgment prediction} (macro-F1; 512-token chunks $\rightarrow$ backbone $\rightarrow$ BiGRU + attention)}\\
+1 & STACK\_with\_fusion & 0.8121 & 0.8225 & Logistic-regression stacker fitted on clean validation over 26 runs: E1--E8, three chunk-selection ablations, V1--V6 variants and nine document models (D\_*) trained on cached chunk vectors of up to 48 chunks, fusing several encoders; threshold 0.52.\\
+2 & STACK\_all & 0.8048 & 0.8160 & The same stacker over the 17 end-to-end runs only (no document models).\\
+3 & ENS\_greedy5 & 0.8009 & 0.8238 & Mean of 5 runs chosen greedily: V1 (A4, 16 chunks), A4 reading the first chunks, E7 (A3 gradual unfreezing), E4 (A2 BitFit), V6 (KD student of a 3-model ensemble).\\
+4 & ENS\_8\_views\_kd & 0.7963 & 0.8068 & Mean of 8 runs: E6, E7, E1, E3, E2, two chunk-selection ablations, E8 KD student.\\
+5 & ENS\_greedy4 & 0.7955 & 0.8219 & As ENS\_greedy5 without V6.\\
+6 & ENS\_top5 & 0.7930 & 0.7974 & Mean of the five best first-round runs (E6, E7, E1, E3, E2), threshold 0.39.\\\midrule
+\multicolumn{5}{@{}p{\linewidth}@{}}{\textbf{Phase 5 --- Statute identification} (macro-F1; 8 chunks $\rightarrow$ BiGRU $\rightarrow$ per-statute attention, per-statute thresholds)}\\
+1 & STACK11\_full & 0.4624 & 0.4603 & Average of MLP and per-statute LightGBM stackers (several seeds) over 28 Phase-1 runs and 6 TF-IDF models, incl.\ one trained on train + validation folds (hybrid).\\
+2 & STACK10\_seedavg & 0.4587 & 0.4602 & As STACK9, averaged over independently seeded stackers.\\
+3 & STACK9\_gbm\_mlp & 0.4579 & 0.4595 & Per-statute LightGBM stacker (each run's logit for the statute, the mean logit of all statutes, model disagreement) averaged with STACK8.\\
+4 & STACK8\_hybrid & 0.4493 & 0.4473 & MLP stacker over 27 Phase-1 runs and 4 lexical models (word and character TF-IDF, SVM).\\
+5 & STACK7\_hybrid & 0.4457 & 0.4436 & MLP stacker over 27 Phase-1 runs and one word TF-IDF logistic regression.\\
+6 & STACK6\_all & 0.4231 & 0.4233 & MLP stacker over 27 Phase-1 runs only (all architectures, PEFT methods and KD students).\\\midrule
+\multicolumn{5}{@{}p{\linewidth}@{}}{\textbf{Phase 6 --- Summarization} (BERTScore F1; full fine-tuning, salient condensation, repetition penalty 1.15)}\\
+1 & S3\_a4\_full\_src4096\_beam4 & 0.8558 & 0.8522 & A4, 4,096-token source, 5 epochs; beam search with 4 beams.\\
+2 & S4\_a4\_full\_src8192 & 0.8539 & 0.8515 & A4, 8,192-token source, continued from S3 for 3 epochs; greedy.\\
+3 & S1\_a4\_full\_src2560 & 0.8538 & 0.8519 & A4, 2,560-token source, 6 epochs; greedy.\\
+4 & S8\_a1\_full\_src8192 & 0.8520 & 0.8530 & A1 (position table interpolated), 8,192-token source, continued from S7; greedy.\\
+5 & S3\_a4\_full\_src4096\_long & 0.8520 & 0.8515 & S3 decoded with 450--900 new tokens.\\
+6 & S3\_a4\_full\_src4096 & 0.8520 & 0.8518 & S3, greedy, 300--800 new tokens.\\\midrule
+\multicolumn{5}{@{}p{\linewidth}@{}}{\textbf{Phase 7 --- Prior case retrieval} (micro-F1@7; per-citation BM25 + Phase-1 citation-window bi-encoders)}\\
+1 & STK4\_rc\_blend4 & 0.4950 & 0.4914 & LightGBM lambdarank over the top 100 cases with row and case-wise (column) normalised lexical features, plus the mean row + column score of 4 bi-encoders (E1, E2, E3, E5).\\
+2 & STK2\_lex\_blend4 & 0.4773 & 0.4869 & Lexical LightGBM re-ranker plus the mean row-normalised score of the same 4 bi-encoders.\\
+3 & STK1\_e2 & 0.4743 & 0.4725 & Lexical re-ranker with the out-of-fold E2 bi-encoder score as an extra feature.\\
+4 & STK0\_lex & 0.4725 & 0.4769 & Lexical LightGBM re-ranker only (no neural score).\\
+5 & K1\_kd\_a1\_4l\_fused & 0.4649 & 0.4625 & 4-block A1 student distilled from E2, fused with per-citation BM25 and the date penalty.\\
+6 & E2\_a1\_full\_fused & 0.4643 & 0.4703 & A1 bi-encoder, full fine-tuning, fused with per-citation BM25 and the date penalty.\\
+\bottomrule
+\end{longtable}}

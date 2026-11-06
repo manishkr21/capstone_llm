@@ -33,6 +33,8 @@ if __name__ == "__main__":
     ap.add_argument("--limit", type=int, default=None, help="only the first N prompts (quick check)")
     ap.add_argument("--set", nargs="*", default=[], metavar="KEY=VALUE", help="generation overrides")
     ap.add_argument("--device", default="auto")
+    ap.add_argument("--data-dir", default=None, help="prompts from another data folder (default: the run's)")
+    ap.add_argument("--tag", default="", help="suffix for the predictions folder")
     args = ap.parse_args()
 
     device = pick_device(args.device)
@@ -42,14 +44,14 @@ if __name__ == "__main__":
         k, _, v = item.partition("=")
         g[k.replace("generation.", "")] = yaml.safe_load(v)
 
-    data_dir = Path(cfg["paths"]["data_dir"])
+    data_dir = Path(args.data_dir or cfg["paths"]["data_dir"])
     prompt_file = data_dir / ("dev/dev_prompts.json" if args.split == "dev" else "test/test.json")
     prompts = load_json(prompt_file)
     if args.limit:
         prompts = dict(list(prompts.items())[: args.limit])
     print(f"{len(prompts)} prompts from {prompt_file}; decoding {g}")
 
-    out_dir = Path(args.run) / "predictions" / f"{args.split}_{decoding_tag(g)}"
+    out_dir = Path(args.run) / "predictions" / f"{args.split}_{decoding_tag(g)}{args.tag}"
     with monitor_from_config(cfg, out_dir / "resources.csv", device, phase=f"generate_{args.split}"):
         preds = generate_predictions(model, tok, prompts, g, device)
     zip_path = write_submission(preds, out_dir)

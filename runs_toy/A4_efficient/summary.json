@@ -1,0 +1,30 @@
+{
+  "run_name": "A4_efficient",
+  "arch": "efficient",
+  "description": "Efficient decoder: RoPE, RMSNorm, SwiGLU, grouped-query + sliding-window attention",
+  "params_total": 393856,
+  "params_non_embedding": 295552,
+  "best_val_loss": 3.2847777009010315,
+  "best_val_ppl": 26.70304759162778,
+  "steps": 40,
+  "tokens_seen": 81920,
+  "train_seconds_this_session": 3.685703992843628,
+  "block_size": 256,
+  "eval_prefix_len": 192,
+  "peak_gpu_mem_gb": 0.099787264,
+  "distilled_from": null,
+  "compute": {
+    "monitored_hours": 0.001,
+    "sessions": 1,
+    "gpu_name": "NVIDIA H200 NVL",
+    "gpu_hours": 0.001,
+    "mean_cpu_pct": 5.54,
+    "mean_gpu_util_pct": 3.56,
+    "peak_ram_gb": 45.739,
+    "peak_proc_rss_gb": 1.461,
+    "peak_vram_gb": 11.138,
+    "peak_torch_alloc_gb": 0.093,
+    "mean_gpu_power_w": 93.41,
+    "energy_kwh": 0.0
+  }
+}

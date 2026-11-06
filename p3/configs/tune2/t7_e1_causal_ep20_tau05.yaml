@@ -1,0 +1,9 @@
+# T7: E1 (A4 LoRMA) causal + 20 epochs + tau 0.5
+inherit: ../e1_a4_lorma.yaml
+run_name: T7_e1_causal_ep20_tau05
+model:
+  attention: causal
+train:
+  epochs: 20
+  patience: 6
+  logit_adjust_tau: 0.5

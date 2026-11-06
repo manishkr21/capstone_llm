@@ -1,0 +1,4 @@
+# V5: E6 with learned attention pooling over the tokens of each chunk instead of the mean
+inherit: e6_a4_partial.yaml
+run_name: V5_e6_attnpool
+model: {chunk_pool: attn}

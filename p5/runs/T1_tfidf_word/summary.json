@@ -1,0 +1,24 @@
+{
+ "run": "T1_tfidf_word",
+ "kind": "tfidf_lr (auxiliary stacking input)",
+ "args": {
+  "name": "T1_tfidf_word",
+  "analyzer": "word",
+  "ngram": [
+   1,
+   2
+  ],
+  "max_features": 400000,
+  "C": 4.0,
+  "jobs": 14
+ },
+ "vocab": 400000,
+ "val_crossfit": {
+  "macro_f1": 0.4069,
+  "macro_p": 0.4125,
+  "macro_r": 0.4236,
+  "micro_f1": 0.5004,
+  "subset_acc": 0.0651
+ },
+ "train_min": 10.5
+}

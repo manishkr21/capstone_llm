@@ -1,0 +1,32 @@
+{
+  "run": "X1_a1_qlora_ep8",
+  "total_params": 28275940,
+  "trainable_params": 2832100,
+  "trainable_pct": 10.016,
+  "val": {
+    "macro_f1": 0.38333175827590227,
+    "macro_p": 0.3622598749423264,
+    "macro_r": 0.42322212099581413,
+    "micro_f1": 0.48516163544186836,
+    "subset_acc": 0.051376695929768554
+  },
+  "global_threshold": 0.575,
+  "val_at_0.5": {
+    "macro_f1": 0.38056274279851804,
+    "macro_p": 0.3305736951753264,
+    "macro_r": 0.46851719340708425,
+    "micro_f1": 0.4809710428913564,
+    "subset_acc": 0.03930566640063847
+  },
+  "sel_best_macro_f1": 0.3903585029522507,
+  "steps": 21160,
+  "train_min": 211.5,
+  "test_infer_s": 50.8,
+  "peak_gpu_gb": 5.71,
+  "ckpt_mb": 11.4,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "run": "T17_t8_hidden512_all",
+  "fold": "all",
+  "total_params": 85825232,
+  "trainable_params": 3758288,
+  "trainable_pct": 4.379,
+  "epochs": 10,
+  "train_docs": 90,
+  "train_min": 8.14,
+  "steps": 490
+}

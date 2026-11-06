@@ -1,0 +1,29 @@
+{
+ "run": "S7b_a1_full_src4096_seed1",
+ "total_params": 85043712,
+ "trainable_params": 85043712,
+ "trainable_pct": 100.0,
+ "val_loss": 1.5304309372245812,
+ "val_metrics": {
+  "rouge1_f1": 0.5052,
+  "rougeL_f1": 0.2732,
+  "words": 401.77,
+  "distinct_trigram": 0.9997,
+  "bertscore_f1": 0.8543,
+  "bertscore_p": 0.8541,
+  "bertscore_r": 0.8546
+ },
+ "train_min": 67.1,
+ "peak_gb": 3.4,
+ "decode_s_per_doc": 1.577,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0,
+  "batch_size": 8,
+  "val_docs": 300
+ },
+ "zip": "S7b_a1_full_src4096_seed1_20261103_170900.zip"
+}

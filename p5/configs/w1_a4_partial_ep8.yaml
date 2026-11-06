@@ -1,0 +1,4 @@
+# A4 partial (top 4 blocks) trained for 8 epochs: 3 -> 5 epochs gave +0.011
+inherit: e5_a4_partial.yaml
+run_name: W1_a4_partial_ep8
+train: {epochs: 8, eval_every: 2000}

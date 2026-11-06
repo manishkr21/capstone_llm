@@ -1,0 +1,25 @@
+{
+ "name": "MBR1_top4",
+ "cands": [
+  "E2_a1_lora:rp",
+  "E6_a1_adalora:rp",
+  "E3_a3_adapter:rp",
+  "F1_a4_full:rp"
+ ],
+ "n_val": 300,
+ "val_metrics": {
+  "rouge1_f1": 0.5314,
+  "rougeL_f1": 0.26,
+  "words": 483.41,
+  "distinct_trigram": 0.9996,
+  "bertscore_f1": 0.8498,
+  "bertscore_p": 0.8499,
+  "bertscore_r": 0.8499
+ },
+ "picked_share": {
+  "E2_a1_lora:rp": 0.46,
+  "E6_a1_adalora:rp": 0.31,
+  "E3_a3_adapter:rp": 0.13,
+  "F1_a4_full:rp": 0.1
+ }
+}

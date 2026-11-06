@@ -1,0 +1,32 @@
+{
+  "run": "V2_e5_ep5",
+  "total_params": 88569316,
+  "trainable_params": 26235364,
+  "trainable_pct": 29.621,
+  "val": {
+    "macro_f1": 0.37685725906767703,
+    "macro_p": 0.34811179166113393,
+    "macro_r": 0.43229425463808185,
+    "micro_f1": 0.4778189530879497,
+    "subset_acc": 0.045989624900239424
+  },
+  "global_threshold": 0.5499999999999999,
+  "val_at_0.5": {
+    "macro_f1": 0.373102267957304,
+    "macro_p": 0.32514307212351645,
+    "macro_r": 0.4631041792680315,
+    "micro_f1": 0.4732116363156796,
+    "subset_acc": 0.03721069433359936
+  },
+  "sel_best_macro_f1": 0.38689837285914697,
+  "steps": 13225,
+  "train_min": 112.5,
+  "test_infer_s": 57.5,
+  "peak_gpu_gb": 3.87,
+  "ckpt_mb": 105.0,
+  "data": {
+    "strategy": "spread",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

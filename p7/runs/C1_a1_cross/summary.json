@@ -1,0 +1,13 @@
+{
+ "run_name": "C1_a1_cross",
+ "params": {
+  "total_params": 82067713,
+  "trainable_params": 82067713,
+  "trainable_pct": 100.0
+ },
+ "train_min": 2.0,
+ "dev_best": 0.4958,
+ "w": 0.25,
+ "dev_stack": 0.4914,
+ "zip": "/home/manish/capstone_llm/p7/submissions/C1_a1_cross_20261106_174650.zip"
+}

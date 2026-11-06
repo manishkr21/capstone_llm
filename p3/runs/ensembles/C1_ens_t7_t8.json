@@ -1,0 +1,41 @@
+{
+  "name": "C1_ens_t7_t8",
+  "members": [
+    "runs/T7_e1_causal_ep20_tau05",
+    "runs/T8_e2_causal_ep20_tau05"
+  ],
+  "oof_uncalibrated": {
+    "all": 0.5071,
+    "CL": 0.5249,
+    "IT": 0.5318
+  },
+  "oof_calibrated_nested": {
+    "all": 0.5115,
+    "CL": 0.5237,
+    "IT": 0.5201
+  },
+  "calibrated_P_R": [
+    0.5218,
+    0.508
+  ],
+  "uncalibrated_P_R": [
+    0.5028,
+    0.5159
+  ],
+  "final_bias": {
+    "Fact": -0.5,
+    "Issue": -1.0,
+    "ArgumentPetitioner": -0.75,
+    "ArgumentRespondent": -1.0,
+    "Statute": -0.5,
+    "Dissent": 1.0,
+    "PrecedentReliedUpon": -0.75,
+    "PrecedentNotReliedUpon": 0.0,
+    "PrecedentOverruled": 0.0,
+    "RulingByLowerCourt": -0.25,
+    "RatioOfTheDecision": -0.75,
+    "RulingByPresentCourt": -0.5,
+    "None": -0.25
+  },
+  "in_sample_fit": 0.536
+}

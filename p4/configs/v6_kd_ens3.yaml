@@ -1,0 +1,4 @@
+# V6: KD student (A4, 6 of 10 blocks, full FT) learning from the ensemble of the 3 best single models: V1_e6_16ch E6_a4_partial V3_a1_partial
+inherit: e8_kd_a4_small.yaml
+run_name: V6_kd_ens3
+distill: {teacher_logits: runs/teacher_ens3_logits.npy, alpha: 0.5, temperature: 2.0}

@@ -1,0 +1,23 @@
+{
+  "run": "E7_a3_gradual",
+  "total_params": 81790979,
+  "trainable_params": 81790979,
+  "trainable_pct": 100.0,
+  "val": {
+    "macro_f1": 0.7726128008292035,
+    "macro_p": 0.772746234442649,
+    "macro_r": 0.772635814889336
+  },
+  "val_f1_at_0.5": 0.7227961659099382,
+  "threshold": 0.30999999999999994,
+  "steps": 3960,
+  "train_min": 27.7,
+  "test_infer_s": 9.2,
+  "peak_gpu_gb": 5.6,
+  "ckpt_mb": 228.9,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

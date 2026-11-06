@@ -1,0 +1,11 @@
+run_name: E5_a3_prefix
+model:
+  phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt
+peft:
+  method: prefix
+  n_prefix: 64
+  prefix_hidden: 512
+train:
+  lr: 1.0e-3
+  micro_batch: 2
+  grad_accum: 8

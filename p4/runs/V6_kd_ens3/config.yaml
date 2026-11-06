@@ -1,0 +1,41 @@
+run_name: V6_kd_ens3
+seed: 1337
+runs_dir: runs
+data:
+  strategy: last
+  n_chunks: 8
+  chunk_len: 512
+model:
+  phase1_ckpt: runs/A4_efficient_clean_1B/best.pt
+  attention: causal
+  encdec_output: decoder
+  keep_layers:
+  - 0
+  - 2
+  - 4
+  - 5
+  - 6
+  - 8
+  doc_layer: gru_attn
+  hidden: 256
+  dropout: 0.1
+  max_chunks: 64
+peft:
+  method: full
+train:
+  epochs: 2
+  docs_per_step: 16
+  docs_per_micro: 2
+  max_chunks: 16
+  lr: 5.0e-05
+  head_lr: 0.001
+  weight_decay: 0.01
+  warmup_frac: 0.06
+  grad_clip: 1.0
+  class_weight: true
+  eval_every: 250
+  log_every: 50
+distill:
+  teacher_logits: runs/teacher_ens3_logits.npy
+  alpha: 0.5
+  temperature: 2.0

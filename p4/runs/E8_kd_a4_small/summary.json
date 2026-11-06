@@ -1,0 +1,23 @@
+{
+  "run": "E8_kd_a4_small",
+  "total_params": 62845187,
+  "trainable_params": 62845187,
+  "trainable_pct": 100.0,
+  "val": {
+    "macro_f1": 0.7756427969193926,
+    "macro_p": 0.7757086167800453,
+    "macro_r": 0.7756539235412475
+  },
+  "val_f1_at_0.5": 0.766607610608135,
+  "threshold": 0.5599999999999999,
+  "steps": 3960,
+  "train_min": 34.8,
+  "test_infer_s": 5.8,
+  "peak_gpu_gb": 5.86,
+  "ckpt_mb": 251.4,
+  "data": {
+    "strategy": "last",
+    "n_chunks": 8,
+    "chunk_len": 512
+  }
+}

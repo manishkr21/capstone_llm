@@ -1,0 +1,19 @@
+
+
+
+  [monitor] logging RAM/VRAM/CPU every 60s -> data/logs/resources_02_tokenizer.csv (GPU: none)
+saved data/tokenizer/legal_bpe.json
+{
+  "legal_bpe": {
+    "vocab_size": 32000,
+    "tokens_per_word": 1.2495,
+    "chars_per_token": 4.7824,
+    "prompt_512_words_in_tokens": 640
+  },
+  "gpt2": {
+    "vocab_size": 50257,
+    "tokens_per_word": 1.3597,
+    "chars_per_token": 4.3947,
+    "prompt_512_words_in_tokens": 696
+  }
+}

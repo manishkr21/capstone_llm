@@ -1,0 +1,4 @@
+inherit: base.yaml
+run_name: E7_a3_adalora
+model: {phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt}
+peft: {method: adalora, r: 12, target_r: 8, alpha: 32, lora_dropout: 0.05, targets: [q, k, v, o, fc, proj], orth_reg: 0.1}

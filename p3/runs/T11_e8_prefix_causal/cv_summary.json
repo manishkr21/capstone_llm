@@ -1,0 +1,47 @@
+{
+  "run": "T11_e8_prefix_causal",
+  "oof": {
+    "all": {
+      "macro_f1": 0.4473,
+      "macro_p": 0.4357,
+      "macro_r": 0.4711,
+      "accuracy": 0.5847
+    },
+    "CL": {
+      "macro_f1": 0.443,
+      "macro_p": 0.4595,
+      "macro_r": 0.461,
+      "accuracy": 0.5925
+    },
+    "IT": {
+      "macro_f1": 0.4831,
+      "macro_p": 0.4751,
+      "macro_r": 0.5038,
+      "accuracy": 0.5713
+    }
+  },
+  "oof_per_label": {
+    "ArgumentPetitioner": 0.5167,
+    "ArgumentRespondent": 0.3997,
+    "Dissent": 0.0,
+    "Fact": 0.7518,
+    "Issue": 0.3551,
+    "None": 0.4767,
+    "PrecedentNotReliedUpon": 0.2953,
+    "PrecedentOverruled": 0.0,
+    "PrecedentReliedUpon": 0.5343,
+    "RatioOfTheDecision": 0.5964,
+    "RulingByLowerCourt": 0.3822,
+    "RulingByPresentCourt": 0.7397,
+    "Statute": 0.7665
+  },
+  "fold_macro_f1_mean": 0.5036,
+  "fold_macro_f1_std": 0.035,
+  "trainable_params": 3633872,
+  "total_params": 91140560,
+  "trainable_pct": 3.987,
+  "train_min_per_fold": 11.05,
+  "peak_gpu_gb": 2.88,
+  "ckpt_mb": 14.5,
+  "dev_infer_s": 2.39
+}

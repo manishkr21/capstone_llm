@@ -1,0 +1,29 @@
+{
+ "run": "E2_a1_lora",
+ "total_params": 86419968,
+ "trainable_params": 5139456,
+ "trainable_pct": 5.947,
+ "val_loss": 2.1327722920107943,
+ "val_metrics": {
+  "rouge1_f1": 0.5037,
+  "rougeL_f1": 0.2603,
+  "words": 491.66,
+  "distinct_trigram": 0.918,
+  "bertscore_f1": 0.8444,
+  "bertscore_p": 0.8465,
+  "bertscore_r": 0.8424
+ },
+ "train_min": 25.7,
+ "peak_gb": 4.71,
+ "decode_s_per_doc": 0.642,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 4,
+  "repetition_penalty": 1.0,
+  "temperature": 0,
+  "batch_size": 32,
+  "val_docs": 300
+ },
+ "zip": "E2_a1_lora_20261029_010844.zip"
+}

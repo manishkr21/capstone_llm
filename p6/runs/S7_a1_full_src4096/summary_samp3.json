@@ -1,0 +1,30 @@
+{
+ "run": "S7_a1_full_src4096",
+ "total_params": 85043712,
+ "trainable_params": 85043712,
+ "trainable_pct": 100.0,
+ "val_loss": null,
+ "val_metrics": {
+  "rouge1_f1": 0.5066,
+  "rougeL_f1": 0.2571,
+  "words": 434.92,
+  "distinct_trigram": 0.9999,
+  "bertscore_f1": 0.8489,
+  "bertscore_p": 0.8469,
+  "bertscore_r": 0.851
+ },
+ "train_min": null,
+ "peak_gb": null,
+ "decode_s_per_doc": 1.633,
+ "gen": {
+  "max_new_tokens": 800,
+  "min_new_tokens": 300,
+  "no_repeat_ngram": 3,
+  "repetition_penalty": 1.15,
+  "temperature": 0.7,
+  "batch_size": 8,
+  "val_docs": 300,
+  "tag": "samp3"
+ },
+ "zip": "S7_a1_full_src4096_samp3_20261030_151329.zip"
+}

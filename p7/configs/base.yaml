@@ -1,0 +1,33 @@
+# Shared Phase-7 settings (prior case retrieval, micro-F1@7); every experiment inherits this.
+run_name: base
+seed: 1337
+model:
+  phase1_ckpt: null       # relative to ../capstone_llm
+  attention: causal       # A1/A4 keep their Phase-1 causal mask; A3 is bidirectional over the window anyway
+  encdec_output: decoder  # A2: decoder states (the Phase-1 A2 encoder output is collapsed)
+  keep_layers: null
+  chunk_pool: mean
+  dim: 256                # projection of the pooled state
+  chunk_agg: max          # window vs case: best-matching chunk of the case
+  win_agg: lse            # query vs case: soft max over the citation windows
+  win_temp: 0.05
+peft:
+  method: lorma
+train:
+  epochs: 10
+  queries: 8              # query cases per step
+  n_pos: 2                # gold cases sampled per query
+  n_hard: 3               # lexical hard negatives per query
+  hard_pool: 30           # ... drawn from the top-30 non-gold per-citation BM25 cases
+  max_wins: 12            # citation windows per query during training
+  chunk_len: 512
+  train_chunks: 4         # chunks per case during training (first + random)
+  eval_chunks: 32         # chunks per case at evaluation (evenly spread)
+  max_tokens: 32768       # tokens per backbone forward
+  tau: 0.05
+  lr: 2.0e-4
+  weight_decay: 0.01
+  warmup_frac: 0.05
+  grad_clip: 1.0
+  log_every: 20
+distill: null

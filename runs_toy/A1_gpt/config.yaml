@@ -1,0 +1,82 @@
+run_name: A1_gpt
+seed: 1337
+paths:
+  data_dir: data_toy
+  runs_dir: runs_toy
+data:
+  local_dir: data_toy/hf
+  json_path: null
+  text_field: null
+  sources:
+    acts: 0.1
+    supreme_court: 0.3
+    high_courts: 0.35
+    tribunals: 0.25
+  train_tokens: 400000
+  val_tokens: 60000
+  tokens_per_word_estimate: 1.35
+  val_fraction: 0.1
+  doc_keep_prob: 1.0
+  min_words: 50
+  collapse_whitespace: true
+  n_dev_prompts: 12
+  prompt_words: 512
+  continuation_words: 128
+tokenizer:
+  type: bpe
+  vocab_size: 2000
+  min_frequency: 2
+  train_docs: 2000
+  path: data_toy/tokenizer/legal_bpe.json
+model:
+  arch: gpt
+  d_model: 128
+  n_layers: 2
+  n_heads: 4
+  d_ff: 256
+  dropout: 0.0
+  n_enc_layers: 2
+  n_dec_layers: 2
+  n_kv_heads: 2
+  window: 64
+  global_every: 2
+train:
+  block_size: 256
+  micro_batch_size: 4
+  grad_accum_steps: 2
+  max_steps: 40
+  lr: 0.001
+  min_lr: 6.0e-05
+  warmup_steps: 5
+  weight_decay: 0.1
+  betas:
+  - 0.9
+  - 0.95
+  grad_clip: 1.0
+  log_interval: 10
+  eval_interval: 20
+  eval_batches: 4
+  early_stop_patience: null
+  dtype: auto
+  device: auto
+  compile: false
+  resume: false
+  enforce_param_budget: false
+eval:
+  prefix_frac: 0.75
+distill: null
+monitor:
+  enabled: true
+  interval_seconds: 2
+  poll_seconds: 0.5
+generation:
+  temperature: 0.8
+  top_k: 50
+  top_p: 0.95
+  repetition_penalty: 1.1
+  repetition_window: 256
+  ban_eos: true
+  target_words: 128
+  max_new_tokens: 64
+  batch_size: 4
+  seed: 0

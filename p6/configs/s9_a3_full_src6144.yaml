@@ -1,0 +1,16 @@
+run_name: S9_a3_full_src6144
+model:
+  phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt
+  init_run: S5_a3_full_src4096
+  src_len: 6144
+peft:
+  method: full
+train:
+  epochs: 2
+  lr: 4.0e-5
+  warmup: 50
+  micro_batch: 1
+  grad_accum: 16
+  eval_batch: 1
+gen:
+  batch_size: 4

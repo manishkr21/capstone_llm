@@ -1,0 +1,5 @@
+# T21: T7 (A4 LoRMA causal) + lexical cue flags (citations, speaker, court level; rr/data.py CUES) for the most-confused roles
+inherit: ../tune2/t7_e1_causal_ep20_tau05.yaml
+run_name: T21_t7_cues
+model:
+  cues: true

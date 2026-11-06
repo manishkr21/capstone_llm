@@ -1,0 +1,31 @@
+run_name: E5_a3_prefix
+seed: 0
+model:
+  phase1_ckpt: runs/A3_prefixlm_clean_1B/best.pt
+  src_len: 1280
+  tgt_len: 768
+  dropout: 0.1
+data:
+  strategy: salient
+  head_frac: 0.15
+peft:
+  method: prefix
+  n_prefix: 64
+  prefix_hidden: 512
+train:
+  epochs: 4
+  lr: 0.001
+  micro_batch: 2
+  grad_accum: 8
+  warmup: 100
+  weight_decay: 0.01
+  label_smoothing: 0.0
+  eval_batch: 8
+gen:
+  max_new_tokens: 800
+  min_new_tokens: 300
+  no_repeat_ngram: 4
+  repetition_penalty: 1.0
+  temperature: 0
+  batch_size: 32
+  val_docs: 300

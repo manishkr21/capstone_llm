@@ -1,0 +1,4 @@
+# E5 trained longer (3 -> 5 epochs): validation macro-F1 was still rising in epoch 3
+inherit: e5_a4_partial.yaml
+run_name: V2_e5_ep5
+train: {epochs: 5, eval_every: 1300}

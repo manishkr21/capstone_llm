@@ -1,0 +1,5 @@
+# T2: E1 with weaker logit adjustment (macro recall 0.51 > precision 0.44 at tau 1)
+inherit: ../e1_a4_lorma.yaml
+run_name: T2_e1_tau05
+train:
+  logit_adjust_tau: 0.5
