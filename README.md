@@ -227,11 +227,3 @@ python report/make_figures.py                              # figures, tables and
 
 The other phases follow the same pattern; each `train.py`, stacker and submission script documents its own
 options in the module docstring (`python <script> -h`).
-
-## Compliance notes
-
-* Only `Exploration-Lab/CS-781-Capstone` data and our own Phase-1 models are used. The Phase-5 hybrid stacks also
-  use TF-IDF models and the Phase-7 systems use BM25; neither uses pretrained weights or outside data, and both
-  are reported as such.
-* Local BERTScore uses `roberta-large` as an evaluation tool only; the organisers' "legal BERTScore" may differ.
-* LLM assistance is declared in the final report's LLM Usage Declaration.
